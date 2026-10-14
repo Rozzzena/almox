@@ -1,0 +1,13 @@
+# Binários e arquivos compilados
+*.exe
+*.o
+*.obj
+
+# Arquivos de depuração e cache de IDE
+*.pdb
+*.ilk
+.vscode/
+.idea/
+
+# Arquivo de dados de execução local (opcional desmarcar se desejar versionar dados de teste)
+# almoxarifado.json

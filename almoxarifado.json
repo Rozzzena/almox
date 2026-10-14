@@ -1,0 +1,58 @@
+{
+  "itens": [
+    {
+      "nome": "Parafuso",
+      "quantidade": 120
+    },
+    {
+      "nome": "Cabo de Rede Cat6",
+      "quantidade": 50
+    },
+    {
+      "nome": "Porca",
+      "quantidade": 200
+    }
+  ],
+  "historico": [
+    {
+      "data_hora": "2026-10-13 22:01:29",
+      "operacao": "ADICIONAR",
+      "nome": "Parafuso",
+      "quantidade": 100,
+      "saldo_anterior": 0,
+      "saldo_novo": 100
+    },
+    {
+      "data_hora": "2026-10-13 22:01:29",
+      "operacao": "ADICIONAR",
+      "nome": "Cabo de Rede Cat6",
+      "quantidade": 50,
+      "saldo_anterior": 0,
+      "saldo_novo": 50
+    },
+    {
+      "data_hora": "2026-10-13 22:01:29",
+      "operacao": "ADICIONAR",
+      "nome": "Parafuso",
+      "quantidade": 50,
+      "saldo_anterior": 100,
+      "saldo_novo": 150
+    },
+    {
+      "data_hora": "2026-10-13 22:01:38",
+      "operacao": "REMOVER",
+      "nome": "Parafuso",
+      "quantidade": 30,
+      "saldo_anterior": 150,
+      "saldo_novo": 120
+    },
+    {
+      "data_hora": "2026-10-13 22:06:23",
+      "operacao": "ADICIONAR",
+      "nome": "Porca",
+      "quantidade": 200,
+      "saldo_anterior": 0,
+      "saldo_novo": 200
+    }
+  ]
+}
