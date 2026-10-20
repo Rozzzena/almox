@@ -1,6 +1,24 @@
 # 📦 Sistema de Almoxarifado em Linha de Comando (C)
 
-Aplicação desenvolvida em **Linguagem C** para controle e registro de estoque de almoxarifado via terminal. Suporta comandos diretos e modo shell interativo contínuo, com persistência automática em arquivo **JSON**.
+Aplicação desenvolvida em **Linguagem C (C99)** para controle e registro de estoque de almoxarifado via terminal. Implementa persistência em **JSON** com modelagem e operações 100% espelhadas no schema **MongoDB** (referência acadêmica/PIM). Suporta comandos diretos (CLI) e modo shell interativo contínuo.
+
+---
+
+## 🎯 Alinhamento com MongoDB (PIM / Banco NoSQL)
+
+As operações da aplicação em C correspondem diretamente às queries do script `almoxarifadopim.mongodb.js`:
+
+| Operação no Sistema (C) | Operação MongoDB Equivalente | Descrição |
+| :--- | :--- | :--- |
+| `adicionar <item> <qtd> [valor]` | `db.produtos.insertOne(...)` ou `updateOne(..., {$inc: {quantidade: N}})` | Cadastra item novo ou incrementa saldo |
+| `remover <item> <qtd>` | `db.produtos.updateOne({quantidade: {$gte: N}}, {$inc: {quantidade: -N}})` | Baixa com trava de estoque negativo |
+| `desativar <item>` | `db.produtos.updateOne(..., {$set: {ativo: false}})` | Exclusão lógica (soft delete) |
+| `adicionar <item_inativo> <qtd>` | `db.produtos.updateOne(..., {$set: {ativo: true}})` | Reativação automática do item |
+| `listar` | `db.produtos.find({ativo: true})` | Exibe apenas itens ativos com subtotais |
+| `listar tudo` | `db.produtos.find({})` | Exibe todos os itens, inclusive inativos |
+| `consultar <termo>` | `db.produtos.find({ativo: true, nome: /termo/i})` | Busca parcial case-insensitive |
+| `relatorio` | `db.produtos.aggregate([{$match: {ativo: true}}, {$group: ...}])` | Soma do valor total e balanço patrimonial |
+| `historico [limite]` | Collection de auditoria / log | Rastreabilidade de movimentações |
 
 ---
 
@@ -8,21 +26,24 @@ Aplicação desenvolvida em **Linguagem C** para controle e registro de estoque 
 
 - **Soma automática de quantidades (`adicionar`)**:
   - Se o item já existir no estoque, soma a nova quantidade ao saldo anterior.
-  - Se for um item novo, cadastra-o automaticamente.
+  - Se for um item novo, cadastra-o automaticamente com código sequencial, data e valor unitário.
+  - Se o item estiver inativo, ele é reativado automaticamente.
 - **Baixa no estoque (`remover`)**:
   - Subtrai a quantidade especificada.
   - Proteção contra estoque negativo (alerta se a quantidade solicitada for maior que o saldo disponível).
-- **Tabela formatada de estoque (`listar`)**:
-  - Exibe todos os itens, quantidades e indicadores de status (`OK`, `BAIXO`, `ZERADO`).
-  - Total de itens cadastrados e contagem total de unidades em estoque.
+- **Exclusão Lógica (`desativar`)**:
+  - Marca o item como `ativo = false`, mantendo o histórico e os dados íntegros.
+- **Tabela formatada de estoque (`listar` / `listar tudo`)**:
+  - Exibe código, descrição, quantidade, valor unitário, valor subtotal e status (`OK`, `BAIXO`, `ZERADO`, `INATIVO`).
+  - Total de unidades e valor patrimonial total em estoque.
+- **Relatório Financeiro e Quantitativo (`relatorio`)**:
+  - Sumário com itens ativos, inativos, zerados, em ponto de reposição e valor financeiro total.
 - **Busca rápida (`consultar`)**:
   - Localiza itens pelo nome ou busca parcial (insensível a maiúsculas/minúsculas).
 - **Histórico completo de movimentações (`historico`)**:
-  - Registra data, hora, tipo de operação (`ADICIONAR` ou `REMOVER`), quantidade, saldo anterior e novo saldo.
+  - Registra data, hora, tipo de operação (`ADICIONAR`, `REMOVER` ou `DESATIVAR`), quantidade, saldo anterior e novo saldo.
 - **Persistência em JSON (`almoxarifado.json`)**:
-  - Todos os dados são salvos imediatamente a cada operação.
-- **Suporte completo a nomes com espaços**:
-  - Suporta tanto aspas (`adicionar "Cabo de Rede Cat6" 100`) quanto sem aspas (`adicionar Cabo de Rede Cat6 100`).
+  - Todos os dados são salvos imediatamente a cada operação, sem necessidade de drivers ou bibliotecas externas.
 - **Cores ANSI e suporte UTF-8**:
   - Visual moderno e legível no PowerShell, Windows Terminal e CMD.
 
@@ -30,8 +51,8 @@ Aplicação desenvolvida em **Linguagem C** para controle e registro de estoque 
 
 ## 🛠️ Como Compilar
 
-### Opção 1: Usando o script `build.bat` (Mais rápido no Windows)
-Basta clicar duas vezes no arquivo `build.bat` ou executar no terminal:
+### Opção 1: Usando o script `build.bat` (Recomendado no Windows)
+Execute no terminal ou dê duplo-clique:
 ```cmd
 build.bat
 ```
@@ -60,11 +81,13 @@ Ao executar sem argumentos, o terminal abre o prompt `almox> `:
 
 Dentro do prompt interativo, digite os comandos:
 ```text
-almox> adicionar Parafuso Sextavado 100
-almox> adicionar Porca M8 200
-almox> adicionar Parafuso Sextavado 50
-almox> remover Porca M8 30
+almox> adicionar Parafuso 100 0.50
+almox> adicionar "Cabo de Rede Cat6" 50 4.20
+almox> remover Parafuso 25
+almox> desativar "Cabo de Rede Cat6"
 almox> listar
+almox> listar tudo
+almox> relatorio
 almox> consultar parafuso
 almox> historico
 almox> sair
@@ -74,16 +97,24 @@ almox> sair
 Você também pode executar comandos diretamente em scripts ou no terminal:
 
 ```cmd
-# Adicionar unidades
-.\almox.exe adicionar Parafuso 100
-.\almox.exe adicionar "Cabo de Rede Cat6" 50
+# Adicionar unidades (com ou sem valor unitário)
+.\almox.exe adicionar Parafuso 100 0.50
+.\almox.exe adicionar "Luva Nitrilica" 40 15.50
 
 # Remover unidades
 .\almox.exe remover Parafuso 20
-.\almox.exe remover "Cabo de Rede Cat6" 10
 
-# Listar todo o estoque
+# Desativar item (exclusão lógica)
+.\almox.exe desativar Parafuso
+
+# Listar itens ativos
 .\almox.exe listar
+
+# Listar todos os itens (inclusive desativados)
+.\almox.exe listar tudo
+
+# Relatório patrimonial ($aggregate)
+.\almox.exe relatorio
 
 # Consultar um item específico
 .\almox.exe consultar Parafuso
@@ -102,10 +133,10 @@ Você também pode executar comandos diretamente em scripts ou no terminal:
 
 ```
 almox/
-├── almoxarifado.h      # Definições de estruturas e protótipos de funções
-├── almoxarifado.c      # Lógica de negócio, serialização JSON e tabelas
+├── almoxarifado.h      # Definições das structs (ItemEstoque com schema Mongo) e protótipos
+├── almoxarifado.c      # Lógica de negócio, serialização JSON e relatórios
 ├── main.c              # Ponto de entrada (CLI e Shell interativo)
-├── almoxarifado.json   # Arquivo gerado automaticamente com os dados
+├── almoxarifado.json   # Base de dados em formato JSON (auto-gerada)
 ├── build.bat           # Script de compilação automatizado para Windows
 ├── Makefile            # Makefile padrão para GCC / MinGW
 └── README.md           # Documentação completa
@@ -119,30 +150,30 @@ almox/
 {
   "itens": [
     {
-      "nome": "Parafuso Sextavado",
-      "quantidade": 150
+      "codigo": 101,
+      "nome": "Parafuso M6",
+      "dataEntrada": "2026-09-10",
+      "valorUnitario": 0.50,
+      "quantidade": 500,
+      "ativo": true
     },
     {
-      "nome": "Porca M8",
-      "quantidade": 170
+      "codigo": 102,
+      "nome": "Cabo de Rede Cat6",
+      "dataEntrada": "2026-10-15",
+      "valorUnitario": 4.20,
+      "quantidade": 80,
+      "ativo": false
     }
   ],
   "historico": [
     {
-      "data_hora": "2026-10-13 21:55:00",
+      "data_hora": "2026-10-20 01:04:41",
       "operacao": "ADICIONAR",
-      "nome": "Parafuso Sextavado",
-      "quantidade": 100,
+      "nome": "Parafuso M6",
+      "quantidade": 500,
       "saldo_anterior": 0,
-      "saldo_novo": 100
-    },
-    {
-      "data_hora": "2026-10-13 21:55:10",
-      "operacao": "ADICIONAR",
-      "nome": "Parafuso Sextavado",
-      "quantidade": 50,
-      "saldo_anterior": 100,
-      "saldo_novo": 150
+      "saldo_novo": 500
     }
   ]
 }

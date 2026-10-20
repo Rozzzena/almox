@@ -1,16 +1,36 @@
 {
   "itens": [
     {
+      "codigo": 1,
       "nome": "Parafuso",
-      "quantidade": 120
+      "dataEntrada": "",
+      "valorUnitario": 0.85,
+      "quantidade": 130,
+      "ativo": true
     },
     {
+      "codigo": 2,
       "nome": "Cabo de Rede Cat6",
-      "quantidade": 50
+      "dataEntrada": "",
+      "valorUnitario": 0.00,
+      "quantidade": 50,
+      "ativo": true
     },
     {
+      "codigo": 3,
       "nome": "Porca",
-      "quantidade": 200
+      "dataEntrada": "",
+      "valorUnitario": 0.00,
+      "quantidade": 200,
+      "ativo": true
+    },
+    {
+      "codigo": 4,
+      "nome": "Luva Nitrilica",
+      "dataEntrada": "2026-10-20",
+      "valorUnitario": 15.50,
+      "quantidade": 40,
+      "ativo": true
     }
   ],
   "historico": [
@@ -53,6 +73,30 @@
       "quantidade": 200,
       "saldo_anterior": 0,
       "saldo_novo": 200
+    },
+    {
+      "data_hora": "2026-10-20 01:04:46",
+      "operacao": "ADICIONAR",
+      "nome": "Luva Nitrilica",
+      "quantidade": 40,
+      "saldo_anterior": 0,
+      "saldo_novo": 40
+    },
+    {
+      "data_hora": "2026-10-20 01:06:11",
+      "operacao": "DESATIVAR",
+      "nome": "Parafuso",
+      "quantidade": 120,
+      "saldo_anterior": 120,
+      "saldo_novo": 0
+    },
+    {
+      "data_hora": "2026-10-20 01:08:53",
+      "operacao": "ADICIONAR",
+      "nome": "Parafuso",
+      "quantidade": 10,
+      "saldo_anterior": 120,
+      "saldo_novo": 130
     }
   ]
 }
