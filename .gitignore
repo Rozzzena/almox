@@ -2,6 +2,7 @@
 *.exe
 *.o
 *.obj
+*.zip
 
 # Arquivos de depuração e cache de IDE
 *.pdb
