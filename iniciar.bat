@@ -11,3 +11,4 @@ echo ===============================================================
 echo   Sessão finalizada. Pressione qualquer tecla para fechar.
 echo ===============================================================
 pause >nul
+
