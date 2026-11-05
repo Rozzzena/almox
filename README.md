@@ -6,7 +6,7 @@ Aplicação desenvolvida em **Linguagem C (C99)** para controle e registro de es
 
 ## 🎯 Alinhamento com MongoDB (PIM / Banco NoSQL)
 
-As operações da aplicação em C correspondem diretamente às queries do script `almoxarifadopim.mongodb.js`:
+As operações da aplicação em C correspondem diretamente às queries do banco NoSQL / MongoDB:
 
 | Operação no Sistema (C) | Operação MongoDB Equivalente | Descrição |
 | :--- | :--- | :--- |
