@@ -24,8 +24,8 @@ if %ERRORLEVEL% equ 0 (
     echo   vendas.exe
     echo.
     echo Para executar via comandos diretos:
-    echo   vendas.exe adicionar Parafuso 100
-    echo   vendas.exe remover Parafuso 20
+    echo   vendas.exe comprar Parafuso 100
+    echo   vendas.exe vender Parafuso 20
     echo   vendas.exe listar
     echo ========================================================
 ) else (

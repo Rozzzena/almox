@@ -24,17 +24,17 @@ pause
 
 cls
 echo ===============================================================
-echo   PASSO 2: Adicionar novo produto ao estoque (Fita Isolante 3M)
+echo   PASSO 2: Comprar / entrada de novo produto (Fita Isolante 3M)
 echo ===============================================================
-"%EXE_CMD%" adicionar "Fita Isolante 3M" 25 8.50
+"%EXE_CMD%" comprar "Fita Isolante 3M" 25 8.50
 echo.
 pause
 
 cls
 echo ===============================================================
-echo   PASSO 3: Realizar saída / venda de item (10 unidades de Parafuso)
+echo   PASSO 3: Realizar venda de produto (10 unidades de Parafuso)
 echo ===============================================================
-"%EXE_CMD%" remover Parafuso 10
+"%EXE_CMD%" vender Parafuso 10
 echo.
 pause
 

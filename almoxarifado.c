@@ -408,13 +408,15 @@ int almox_adicionar(Almoxarifado *almox, const char *nome_bruto,
         if (valorUnitario > 0.0)
             almox->itens[idx].valorUnitario = valorUnitario;
 
-        printf(COR_VERDE "[SUCESSO] Item atualizado: '%s' (Cód. %03d)\n" COR_RESET,
+        printf(COR_VERDE "[SUCESSO] Compra registrada: '%s' (Cód. %03d)\n" COR_RESET,
                almox->itens[idx].nome, almox->itens[idx].codigo);
-        printf("          Adicionado       : " COR_VERDE "+%d unidade(s)" COR_RESET "\n", quantidade);
-        printf("          Saldo anterior   : %d  >>  " COR_CIANO "Novo saldo: %d" COR_RESET "\n",
+        printf("          Quantidade comprada: " COR_VERDE "+%d unidade(s)" COR_RESET "\n", quantidade);
+        printf("          Saldo anterior     : %d  >>  " COR_CIANO "Novo saldo: %d" COR_RESET "\n",
                saldo_ant, saldo_novo);
-        printf("          Valor unitário   : " COR_CIANO "R$ %.2f" COR_RESET "\n",
+        printf("          Preço unitário     : " COR_CIANO "R$ %.2f" COR_RESET "\n",
                almox->itens[idx].valorUnitario);
+        registrar_movimentacao(almox, "COMPRA", almox->itens[idx].nome,
+                               quantidade, saldo_ant, saldo_novo);
     } else {
         /* Novo item (equivale ao insertOne do MongoDB) */
         if (almox->total_itens >= MAX_ITENS) {
@@ -432,15 +434,15 @@ int almox_adicionar(Almoxarifado *almox, const char *nome_bruto,
         saldo_ant         = 0;
         saldo_novo        = quantidade;
 
-        printf(COR_VERDE "[SUCESSO] Novo item cadastrado: '%s' (Cód. %03d)\n" COR_RESET,
+        printf(COR_VERDE "[SUCESSO] Novo produto cadastrado: '%s' (Cód. %03d)\n" COR_RESET,
                it->nome, it->codigo);
-        printf("          Quantidade inicial: " COR_CIANO "%d unidade(s)" COR_RESET "\n", saldo_novo);
-        printf("          Valor unitário    : " COR_CIANO "R$ %.2f" COR_RESET "\n", it->valorUnitario);
-        printf("          Data de entrada   : " COR_CIANO "%s" COR_RESET "\n", it->dataEntrada);
+        printf("          Quantidade inicial : " COR_CIANO "%d unidade(s)" COR_RESET "\n", saldo_novo);
+        printf("          Preço unitário     : " COR_CIANO "R$ %.2f" COR_RESET "\n", it->valorUnitario);
+        printf("          Data de entrada    : " COR_CIANO "%s" COR_RESET "\n", it->dataEntrada);
+        registrar_movimentacao(almox, "CADASTRO", almox->itens[idx].nome,
+                               quantidade, saldo_ant, saldo_novo);
     }
 
-    registrar_movimentacao(almox, "ADICIONAR", almox->itens[idx].nome,
-                           quantidade, saldo_ant, saldo_novo);
     almox_salvar_json(almox);
     return 1;
 }
@@ -471,7 +473,7 @@ int almox_remover(Almoxarifado *almox, const char *nome_bruto, int quantidade) {
         return 0;
     }
     if (!almox->itens[idx].ativo) {
-        printf(COR_AMARELO "[AVISO] Item '%s' está inativo. Use 'adicionar' para reativá-lo.\n" COR_RESET,
+        printf(COR_AMARELO "[AVISO] Produto '%s' está inativo. Use 'comprar' ou 'cadastrar' para reativá-lo.\n" COR_RESET,
                almox->itens[idx].nome);
         return 0;
     }
@@ -486,14 +488,19 @@ int almox_remover(Almoxarifado *almox, const char *nome_bruto, int quantidade) {
 
     almox->itens[idx].quantidade -= quantidade;
     int saldo_novo = almox->itens[idx].quantidade;
+    double total_venda = almox->itens[idx].valorUnitario * quantidade;
 
-    printf(COR_VERDE "[SUCESSO] Baixa realizada: '%s' (Cód. %03d)\n" COR_RESET,
+    printf(COR_VERDE "[SUCESSO] Venda realizada: '%s' (Cód. %03d)\n" COR_RESET,
            almox->itens[idx].nome, almox->itens[idx].codigo);
-    printf("          Removido         : " COR_VERMELHO "-%d unidade(s)" COR_RESET "\n", quantidade);
-    printf("          Saldo anterior   : %d  >>  " COR_CIANO "Novo saldo: %d" COR_RESET "\n",
+    printf("          Quantidade vendida : " COR_VERMELHO "-%d unidade(s)" COR_RESET "\n", quantidade);
+    printf("          Saldo anterior     : %d  >>  " COR_CIANO "Novo saldo em estoque: %d" COR_RESET "\n",
            saldo_ant, saldo_novo);
+    if (almox->itens[idx].valorUnitario > 0.0) {
+        printf("          Valor total venda  : " COR_VERDE "R$ %.2f" COR_RESET " (Preço un.: R$ %.2f)\n",
+               total_venda, almox->itens[idx].valorUnitario);
+    }
 
-    registrar_movimentacao(almox, "REMOVER", almox->itens[idx].nome,
+    registrar_movimentacao(almox, "VENDA", almox->itens[idx].nome,
                            quantidade, saldo_ant, saldo_novo);
     almox_salvar_json(almox);
     return 1;
@@ -685,9 +692,11 @@ void almox_exibir_historico(const Almoxarifado *almox, int limite) {
     for (int i = almox->total_historico - 1; i >= inicio; i--) {
         const RegistroHistorico *h = &almox->historico[i];
         const char *cor_tipo;
-        if      (strcmp(h->operacao, "ADICIONAR") == 0) cor_tipo = COR_VERDE;
+        if      (strcmp(h->operacao, "COMPRA")    == 0 ||
+                 strcmp(h->operacao, "CADASTRO")  == 0 ||
+                 strcmp(h->operacao, "ADICIONAR") == 0) cor_tipo = COR_VERDE;
         else if (strcmp(h->operacao, "DESATIVAR") == 0) cor_tipo = COR_CINZA;
-        else                                             cor_tipo = COR_VERMELHO;
+        else /* VENDA, REMOVER */                        cor_tipo = COR_VERMELHO;
 
         printf("%-19s | %s%-10s" COR_RESET " | %-30s | %6d | %7d | %s%7d" COR_RESET "\n",
                h->data_hora, cor_tipo, h->operacao,

@@ -51,10 +51,18 @@ void almox_inicializar    (Almoxarifado *almox, const char *caminho);
 int  almox_carregar_json  (Almoxarifado *almox);
 int  almox_salvar_json    (const Almoxarifado *almox);
 
-/* ---- CRUD -------------------------------------------------------------- */
+/* ---- CRUD / Compras e Vendas ------------------------------------------- */
 int  almox_adicionar      (Almoxarifado *almox, const char *nome, int quantidade, double valorUnitario);
 int  almox_remover        (Almoxarifado *almox, const char *nome, int quantidade);
 int  almox_desativar      (Almoxarifado *almox, const char *nome); /* Exclusão lógica */
+
+/* Nomenclatura oficial de Vendas e Compras */
+#define vendas_cadastrar almox_adicionar
+#define vendas_comprar   almox_adicionar
+#define vendas_vender    almox_remover
+#define vendas_listar    almox_listar
+#define vendas_relatorio almox_relatorio
+#define vendas_consultar almox_consultar
 
 /* ---- Leitura / Relatórios --------------------------------------------- */
 void almox_listar         (const Almoxarifado *almox, int mostrar_inativos);

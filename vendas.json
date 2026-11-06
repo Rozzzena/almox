@@ -5,7 +5,7 @@
       "nome": "Parafuso",
       "dataEntrada": "",
       "valorUnitario": 0.85,
-      "quantidade": 130,
+      "quantidade": 170,
       "ativo": true
     },
     {
@@ -37,7 +37,7 @@
       "nome": "Teclado Mecanico RGB",
       "dataEntrada": "2026-11-05",
       "valorUnitario": 249.90,
-      "quantidade": 15,
+      "quantidade": 13,
       "ativo": true
     },
     {
@@ -129,6 +129,30 @@
       "quantidade": 20,
       "saldo_anterior": 0,
       "saldo_novo": 20
+    },
+    {
+      "data_hora": "2026-11-05 23:02:26",
+      "operacao": "VENDA",
+      "nome": "Parafuso",
+      "quantidade": 10,
+      "saldo_anterior": 130,
+      "saldo_novo": 120
+    },
+    {
+      "data_hora": "2026-11-05 23:02:26",
+      "operacao": "COMPRA",
+      "nome": "Parafuso",
+      "quantidade": 50,
+      "saldo_anterior": 120,
+      "saldo_novo": 170
+    },
+    {
+      "data_hora": "2026-11-05 23:02:26",
+      "operacao": "VENDA",
+      "nome": "Teclado Mecanico RGB",
+      "quantidade": 2,
+      "saldo_anterior": 15,
+      "saldo_novo": 13
     }
   ]
 }

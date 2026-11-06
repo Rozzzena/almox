@@ -4,48 +4,37 @@ Aplicação desenvolvida em **Linguagem C (C99)** para gestão de compras, venda
 
 ---
 
-## 🎯 Alinhamento com MongoDB (PIM / Banco NoSQL)
+## 🎯 Comandos do Sistema
 
-As operações da aplicação em C correspondem diretamente às queries do banco NoSQL / MongoDB:
-
-| Operação no Sistema (C) | Operação MongoDB Equivalente | Descrição |
+| Comando | Sintaxe | Descrição |
 | :--- | :--- | :--- |
-| `adicionar <item> <qtd> [valor]` | `db.produtos.insertOne(...)` ou `updateOne(..., {$inc: {quantidade: N}})` | Cadastra item novo ou incrementa saldo |
-| `remover <item> <qtd>` | `db.produtos.updateOne({quantidade: {$gte: N}}, {$inc: {quantidade: -N}})` | Baixa com trava de estoque negativo |
-| `desativar <item>` | `db.produtos.updateOne(..., {$set: {ativo: false}})` | Exclusão lógica (soft delete) |
-| `adicionar <item_inativo> <qtd>` | `db.produtos.updateOne(..., {$set: {ativo: true}})` | Reativação automática do item |
-| `listar` | `db.produtos.find({ativo: true})` | Exibe apenas itens ativos com subtotais |
-| `listar tudo` | `db.produtos.find({})` | Exibe todos os itens, inclusive inativos |
-| `consultar <termo>` | `db.produtos.find({ativo: true, nome: /termo/i})` | Busca parcial case-insensitive |
-| `relatorio` | `db.produtos.aggregate([{$match: {ativo: true}}, {$group: ...}])` | Soma do valor total e balanço patrimonial |
-| `historico [limite]` | Collection de auditoria / log | Rastreabilidade de movimentações |
+| `cadastrar` | `cadastrar` | Cadastra novo produto campo a campo (interativo) |
+| `cadastrar` | `cadastrar <produto> <qtd> [valor]` | Cadastra produto em linha única |
+| `comprar` | `comprar` | Registra entrada/compra de estoque (interativo) |
+| `comprar` | `comprar <produto> <qtd> [valor]` | Entrada de estoque em linha única |
+| `vender` | `vender` | Realiza uma venda (interativo) |
+| `vender` | `vender <produto> <qtd>` | Venda em linha única com trava de saldo |
+| `desativar` | `desativar <produto>` | Exclusão lógica — remove das listagens sem apagar |
+| `listar` | `listar` | Exibe apenas produtos ativos com saldos e valores |
+| `listar tudo` | `listar tudo` | Exibe todos os produtos, inclusive desativados |
+| `consultar` | `consultar <termo>` | Busca parcial no nome do produto |
+| `relatorio` | `relatorio` | Balanço financeiro e resumo quantitativo |
+| `historico` | `historico [limite]` | Histórico de compras, vendas e cadastros |
 
 ---
 
 ## 🚀 Funcionalidades
 
-- **Soma automática de quantidades (`adicionar`)**:
-  - Se o item já existir no estoque, soma a nova quantidade ao saldo anterior.
-  - Se for um item novo, cadastra-o automaticamente com código sequencial, data e valor unitário.
-  - Se o item estiver inativo, ele é reativado automaticamente.
-- **Baixa no estoque (`remover`)**:
-  - Subtrai a quantidade especificada.
-  - Proteção contra estoque negativo (alerta se a quantidade solicitada for maior que o saldo disponível).
-- **Exclusão Lógica (`desativar`)**:
-  - Marca o item como `ativo = false`, mantendo o histórico e os dados íntegros.
-- **Tabela formatada de estoque (`listar` / `listar tudo`)**:
-  - Exibe código, descrição, quantidade, valor unitário, valor subtotal e status (`OK`, `BAIXO`, `ZERADO`, `INATIVO`).
-  - Total de unidades e valor patrimonial total em estoque.
-- **Relatório Financeiro e Quantitativo (`relatorio`)**:
-  - Sumário com itens ativos, inativos, zerados, em ponto de reposição e valor financeiro total.
-- **Busca rápida (`consultar`)**:
-  - Localiza itens pelo nome ou busca parcial (insensível a maiúsculas/minúsculas).
-- **Histórico completo de movimentações (`historico`)**:
-  - Registra data, hora, tipo de operação (`ADICIONAR`, `REMOVER` ou `DESATIVAR`), quantidade, saldo anterior e novo saldo.
-- **Persistência em JSON (`almoxarifado.json`)**:
-  - Todos os dados são salvos imediatamente a cada operação, sem necessidade de drivers ou bibliotecas externas.
-- **Cores ANSI e suporte UTF-8**:
-  - Visual moderno e legível no PowerShell, Windows Terminal e CMD.
+- **Cadastro de produto campo a campo (`cadastrar`)**: Solicita nome, quantidade e preço um por um, com validação e cancelamento seguro.
+- **Registro de Compras (`comprar`)**: Entrada de estoque com interativo ou linha única. Reativa produtos inativos automaticamente.
+- **Registro de Vendas (`vender`)**: Dá baixa no estoque, mostra valor total da venda e protege contra saldo negativo.
+- **Exclusão Lógica (`desativar`)**: Desativa o produto sem apagar histórico. Use `comprar` no mesmo produto para reativar.
+- **Tabela formatada de estoque (`listar` / `listar tudo`)**: Exibe código, descrição, quantidade, valor unitário, valor subtotal e status (`OK`, `BAIXO`, `ZERADO`, `INATIVO`).
+- **Relatório Financeiro (`relatorio`)**: Sumário com total de produtos, unidades, inativos e valor financeiro em estoque.
+- **Busca rápida (`consultar`)**: Localiza produtos pelo nome, busca parcial sem distinção de maiúsculas/minúsculas.
+- **Histórico de Movimentações (`historico`)**: Registra data, hora, tipo (`CADASTRO`, `COMPRA`, `VENDA`, `DESATIVAR`), saldo anterior e novo saldo.
+- **Persistência em JSON (`vendas.json`)**: Dados salvos imediatamente após cada operação, sem dependências externas.
+- **Cores ANSI e suporte UTF-8**: Visual moderno no PowerShell, Windows Terminal e CMD.
 
 ---
 
@@ -82,11 +71,10 @@ Ao executar sem argumentos, o terminal abre o prompt `vendas> `:
 Dentro do prompt interativo, digite os comandos:
 ```text
 vendas> cadastrar
-(solicitará nome, quantidade e valor unitário com Enter)
+(solicita nome, quantidade e valor unitário com Enter)
 
-vendas> cadastrar Parafuso 100 0.50
-vendas> cadastrar "Cabo de Rede Cat6" 50 4.20
-vendas> remover Parafuso 25
+vendas> comprar "Cabo de Rede Cat6" 50 4.20
+vendas> vender Parafuso 25
 vendas> desativar "Cabo de Rede Cat6"
 vendas> listar
 vendas> listar tudo
@@ -100,34 +88,33 @@ vendas> sair
 Você também pode executar comandos diretamente em scripts ou no terminal:
 
 ```cmd
-# Adicionar unidades (com ou sem valor unitário)
-.\almox.exe adicionar Parafuso 100 0.50
-.\almox.exe adicionar "Luva Nitrilica" 40 15.50
+# Cadastrar novo produto
+.\vendas.exe cadastrar "Luva Nitrilica" 40 15.50
 
-# Remover unidades
-.\almox.exe remover Parafuso 20
+# Registrar compra (entrada de estoque)
+.\vendas.exe comprar Parafuso 100 0.50
 
-# Desativar item (exclusão lógica)
-.\almox.exe desativar Parafuso
+# Registrar venda (baixa de estoque)
+.\vendas.exe vender Parafuso 20
 
-# Listar itens ativos
-.\almox.exe listar
+# Desativar produto (exclusão lógica)
+.\vendas.exe desativar Parafuso
 
-# Listar todos os itens (inclusive desativados)
-.\almox.exe listar tudo
+# Listar produtos ativos
+.\vendas.exe listar
 
-# Relatório patrimonial ($aggregate)
-.\almox.exe relatorio
+# Listar todos (inclusive desativados)
+.\vendas.exe listar tudo
 
-# Consultar um item específico
-.\almox.exe consultar Parafuso
+# Relatório financeiro
+.\vendas.exe relatorio
 
-# Visualizar o histórico de movimentações
-.\almox.exe historico
-.\almox.exe historico 10
+# Consultar um produto específico
+.\vendas.exe consultar Parafuso
 
-# Ajuda
-.\almox.exe ajuda
+# Histórico de movimentações
+.\vendas.exe historico
+.\vendas.exe historico 10
 ```
 
 ---
@@ -136,47 +123,49 @@ Você também pode executar comandos diretamente em scripts ou no terminal:
 
 ```
 almox/
-├── almoxarifado.h      # Definições das structs (ItemEstoque com schema Mongo) e protótipos
-├── almoxarifado.c      # Lógica de negócio, serialização JSON e relatórios
-├── main.c              # Ponto de entrada (CLI e Shell interativo)
-├── almoxarifado.json   # Base de dados em formato JSON (auto-gerada)
-├── build.bat           # Script de compilação automatizado para Windows
-├── Makefile            # Makefile padrão para GCC / MinGW
-└── README.md           # Documentação completa
+├── almoxarifado.h    # Definições de structs, constantes e protótipos
+├── almoxarifado.c    # Lógica de compras, vendas, listagem e relatórios
+├── main.c            # CLI, shell interativo e fluxos campo a campo
+├── vendas.json       # Banco de dados JSON (gerado automaticamente)
+├── build.bat         # Script de compilação para Windows
+├── Makefile          # Makefile para GCC / MinGW
+├── iniciar.bat       # Atalho de duplo clique para executar
+├── demonstracao.bat  # Roteiro de demonstração guiada
+└── README.md         # Documentação completa
 ```
 
 ---
 
-## 📄 Exemplo do Arquivo JSON (`almoxarifado.json`)
+## 📄 Exemplo do Arquivo JSON (`vendas.json`)
 
 ```json
 {
   "itens": [
     {
-      "codigo": 101,
-      "nome": "Parafuso M6",
-      "dataEntrada": "2026-09-10",
-      "valorUnitario": 0.50,
-      "quantidade": 500,
+      "codigo": 1,
+      "nome": "Parafuso",
+      "dataEntrada": "2026-11-05",
+      "valorUnitario": 0.85,
+      "quantidade": 170,
       "ativo": true
-    },
-    {
-      "codigo": 102,
-      "nome": "Cabo de Rede Cat6",
-      "dataEntrada": "2026-10-15",
-      "valorUnitario": 4.20,
-      "quantidade": 80,
-      "ativo": false
     }
   ],
   "historico": [
     {
-      "data_hora": "2026-10-20 01:04:41",
-      "operacao": "ADICIONAR",
-      "nome": "Parafuso M6",
-      "quantidade": 500,
-      "saldo_anterior": 0,
-      "saldo_novo": 500
+      "data_hora": "2026-11-05 23:02:26",
+      "operacao": "COMPRA",
+      "nome": "Parafuso",
+      "quantidade": 50,
+      "saldo_anterior": 120,
+      "saldo_novo": 170
+    },
+    {
+      "data_hora": "2026-11-05 23:02:26",
+      "operacao": "VENDA",
+      "nome": "Parafuso",
+      "quantidade": 10,
+      "saldo_anterior": 130,
+      "saldo_novo": 120
     }
   ]
 }
