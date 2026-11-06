@@ -1,0 +1,17 @@
+-- ============================================================
+-- SISTEMA DE VENDAS E ESTOQUE — SQL Server
+-- Script de execução completa em ordem
+-- Execute este arquivo para criar todo o banco do zero
+-- ============================================================
+-- Ordem de execução:
+--   01_schema.sql            → Cria banco e tabelas
+--   02_seed_dados.sql        → Popula com dados reais do sistema
+--   03_operacoes_crud.sql    → Exemplos de operações CRUD
+--   04_relatorios.sql        → Relatórios e análises
+--   05_stored_procedures.sql → Procedures para cada operação
+--   06_views_indices.sql     → Views prontas e índices
+-- ============================================================
+-- Para rodar no SQL Server Management Studio (SSMS):
+--   1. Abra cada arquivo na ordem acima
+--   2. Pressione F5 (ou clique em Executar) em cada um
+-- ============================================================
