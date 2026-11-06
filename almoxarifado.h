@@ -10,27 +10,21 @@
 #define MAX_ITENS      1000
 #define MAX_HISTORICO  2000
 #define MAX_NOME       100
-#define ARQUIVO_PADRAO "almoxarifado.json"
+#define ARQUIVO_PADRAO "vendas.json"
 
 /*
- * ItemEstoque — schema espelhado da collection 'produtos' do MongoDB
- * (referência: teste/almoxarifadopim.mongodb.js)
- *
- *   db.produtos.insertOne({
- *     codigo: 101, nome: 'Parafuso M6', dataEntrada: new Date('2026-09-10'),
- *     valorUnitario: 0.50, quantidade: 500, ativo: true
- *   });
+ * ItemEstoque — schema de produtos para vendas e estoque
  */
 typedef struct {
-    int    codigo;           /* PK auto-incremento (equivalente ao _id no Mongo) */
+    int    codigo;           /* Código identificador único do produto */
     char   nome[MAX_NOME];
-    char   dataEntrada[25];  /* Formato ISO: "AAAA-MM-DD"                         */
-    double valorUnitario;
-    int    quantidade;
-    int    ativo;            /* 1 = true (ativo), 0 = false (exclusão lógica)     */
+    char   dataEntrada[25];  /* Formato ISO: "AAAA-MM-DD"             */
+    double valorUnitario;    /* Preço unitário                        */
+    int    quantidade;       /* Quantidade em estoque                 */
+    int    ativo;            /* 1 = ativo, 0 = inativo                */
 } ItemEstoque;
 
-/* Registro de movimentação — array "historico" do JSON */
+/* Registro de movimentação — compras, vendas e exclusão */
 typedef struct {
     char data_hora[25];  /* "AAAA-MM-DD HH:MM:SS" */
     char operacao[16];   /* "ADICIONAR", "REMOVER" ou "DESATIVAR" */
@@ -40,7 +34,7 @@ typedef struct {
     int  saldo_novo;
 } RegistroHistorico;
 
-/* Estrutura principal do almoxarifado */
+/* Estrutura principal do sistema de vendas e estoque */
 typedef struct {
     ItemEstoque       itens[MAX_ITENS];
     int               total_itens;
@@ -48,7 +42,9 @@ typedef struct {
     int               total_historico;
     char              caminho_arquivo[260];
     int               proximo_codigo;   /* Contador auto-incremento */
-} Almoxarifado;
+} SistemaVendas;
+
+typedef SistemaVendas Almoxarifado; /* Alias para compatibilidade */
 
 /* ---- Ciclo de vida ----------------------------------------------------- */
 void almox_inicializar    (Almoxarifado *almox, const char *caminho);

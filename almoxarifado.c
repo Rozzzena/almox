@@ -543,7 +543,7 @@ int almox_desativar(Almoxarifado *almox, const char *nome_bruto) {
 
 void almox_listar(const Almoxarifado *almox, int mostrar_inativos) {
     printf("\n" COR_CIANO "=======================================================================================\n");
-    printf("                           ESTOQUE DO ALMOXARIFADO                                    \n");
+    printf("                           ESTOQUE DE PRODUTOS / VENDAS                                \n");
     printf("=======================================================================================" COR_RESET "\n");
 
     /* Conta quantos serão exibidos */
@@ -715,8 +715,7 @@ void almox_exibir_historico(const Almoxarifado *almox, int limite) {
 
 void almox_relatorio(const Almoxarifado *almox) {
     printf("\n" COR_CIANO "========================================================================\n");
-    printf("              RELATÓRIO — VALOR TOTAL EM ESTOQUE                        \n");
-    printf("         (equivalente ao $aggregate do almoxarifadopim.mongodb.js)      \n");
+    printf("              RELATÓRIO — VALOR TOTAL EM ESTOQUE / VENDAS               \n");
     printf("========================================================================" COR_RESET "\n");
 
     double valor_total    = 0.0;

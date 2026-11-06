@@ -1,10 +1,14 @@
 @echo off
 chcp 65001 >nul
-title Sistema de Almoxarifado em C - Apresentação PIM
+title Sistema de Vendas e Estoque em C
 mode con: cols=95 lines=32
 cls
 
-"%~dp0almox.exe"
+if exist "%~dp0vendas.exe" (
+    "%~dp0vendas.exe"
+) else (
+    "%~dp0almox.exe"
+)
 
 echo.
 echo ===============================================================

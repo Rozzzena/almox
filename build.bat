@@ -2,7 +2,7 @@
 setlocal
 
 echo ========================================================
-echo   Compilando Sistema de Almoxarifado em C...
+echo   Compilando Sistema de Vendas em C...
 echo ========================================================
 
 where gcc >nul 2>&1
@@ -12,20 +12,21 @@ if %ERRORLEVEL% neq 0 (
     )
 )
 
-gcc -std=c99 -Wall -Wextra -O2 main.c almoxarifado.c -o almox.exe
+gcc -std=c99 -Wall -Wextra -O2 main.c almoxarifado.c -o vendas.exe
+copy /y vendas.exe almox.exe >nul 2>&1
 
 if %ERRORLEVEL% equ 0 (
     echo.
     echo [SUCESSO] Compilacao concluida com sucesso!
-    echo Executavel gerado: almox.exe
+    echo Executavel gerado: vendas.exe
     echo.
     echo Para executar no modo interativo:
-    echo   almox.exe
+    echo   vendas.exe
     echo.
     echo Para executar via comandos diretos:
-    echo   almox.exe adicionar Parafuso 100
-    echo   almox.exe remover Parafuso 20
-    echo   almox.exe listar
+    echo   vendas.exe adicionar Parafuso 100
+    echo   vendas.exe remover Parafuso 20
+    echo   vendas.exe listar
     echo ========================================================
 ) else (
     echo.

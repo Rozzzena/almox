@@ -13,8 +13,8 @@
 static void exibir_banner(void) {
     printf(COR_CIANO);
     printf("  ===============================================================\n");
-    printf("  *             SISTEMA DE ALMOXARIFADO (CLI)                   *\n");
-    printf("  *        Schema MongoDB  |  Persistência JSON  |  C99         *\n");
+    printf("  *               SISTEMA DE VENDAS E ESTOQUE                   *\n");
+    printf("  *        Gestão de Compras, Vendas e Produtos | C99           *\n");
     printf("  ===============================================================\n");
     printf(COR_RESET);
     printf("  Comandos: " COR_VERDE "adicionar" COR_RESET ", " COR_VERMELHO "remover" COR_RESET
@@ -304,7 +304,7 @@ int main(int argc, char *argv[]) {
 
     char linha[512];
     while (1) {
-        printf(COR_CIANO "almox> " COR_RESET);
+        printf(COR_CIANO "vendas> " COR_RESET);
         fflush(stdout);
 
         if (!fgets(linha, sizeof(linha), stdin)) break; /* EOF */

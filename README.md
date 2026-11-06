@@ -1,6 +1,6 @@
-# 📦 Sistema de Almoxarifado em Linha de Comando (C)
+# 📦 Sistema de Vendas e Estoque em Linha de Comando (C)
 
-Aplicação desenvolvida em **Linguagem C (C99)** para controle e registro de estoque de almoxarifado via terminal. Implementa persistência em **JSON** com modelagem e operações 100% espelhadas no schema **MongoDB** (referência acadêmica/PIM). Suporta comandos diretos (CLI) e modo shell interativo contínuo.
+Aplicação desenvolvida em **Linguagem C (C99)** para gestão de compras, vendas e controle de estoque de produtos via terminal. Implementa persistência em **JSON** (`vendas.json`) com comandos diretos (CLI) e modo shell interativo contínuo.
 
 ---
 
@@ -74,23 +74,23 @@ make
 A aplicação funciona em **dois modos**:
 
 ### 1. Modo Interativo (Shell Contínuo)
-Ao executar sem argumentos, o terminal abre o prompt `almox> `:
+Ao executar sem argumentos, o terminal abre o prompt `vendas> `:
 ```cmd
-.\almox.exe
+.\vendas.exe
 ```
 
 Dentro do prompt interativo, digite os comandos:
 ```text
-almox> adicionar Parafuso 100 0.50
-almox> adicionar "Cabo de Rede Cat6" 50 4.20
-almox> remover Parafuso 25
-almox> desativar "Cabo de Rede Cat6"
-almox> listar
-almox> listar tudo
-almox> relatorio
-almox> consultar parafuso
-almox> historico
-almox> sair
+vendas> adicionar Parafuso 100 0.50
+vendas> adicionar "Cabo de Rede Cat6" 50 4.20
+vendas> remover Parafuso 25
+vendas> desativar "Cabo de Rede Cat6"
+vendas> listar
+vendas> listar tudo
+vendas> relatorio
+vendas> consultar parafuso
+vendas> historico
+vendas> sair
 ```
 
 ### 2. Modo Linha de Comando Direta (CLI)

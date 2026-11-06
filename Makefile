@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -std=c99 -Wall -Wextra -O2
-TARGET = almox.exe
+TARGET = vendas.exe
 SRCS = main.c almoxarifado.c
 OBJS = $(SRCS:.c=.o)
 
