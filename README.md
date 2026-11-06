@@ -81,8 +81,11 @@ Ao executar sem argumentos, o terminal abre o prompt `vendas> `:
 
 Dentro do prompt interativo, digite os comandos:
 ```text
-vendas> adicionar Parafuso 100 0.50
-vendas> adicionar "Cabo de Rede Cat6" 50 4.20
+vendas> cadastrar
+(solicitará nome, quantidade e valor unitário com Enter)
+
+vendas> cadastrar Parafuso 100 0.50
+vendas> cadastrar "Cabo de Rede Cat6" 50 4.20
 vendas> remover Parafuso 25
 vendas> desativar "Cabo de Rede Cat6"
 vendas> listar

@@ -17,7 +17,7 @@ static void exibir_banner(void) {
     printf("  *        Gestão de Compras, Vendas e Produtos | C99           *\n");
     printf("  ===============================================================\n");
     printf(COR_RESET);
-    printf("  Comandos: " COR_VERDE "adicionar" COR_RESET ", " COR_VERMELHO "remover" COR_RESET
+    printf("  Comandos: " COR_VERDE "cadastrar" COR_RESET ", " COR_VERMELHO "remover" COR_RESET
            ", " COR_AMARELO "desativar" COR_RESET ", " COR_CIANO "listar" COR_RESET
            ", " COR_MAGENTA "relatorio" COR_RESET ", " COR_AZUL "consultar" COR_RESET
            ", " COR_BRANCO "historico" COR_RESET "\n");
@@ -28,12 +28,19 @@ static void exibir_banner(void) {
 static void exibir_ajuda(void) {
     printf("\n" COR_CIANO "------------------------- GUIA DE COMANDOS -------------------------" COR_RESET "\n");
 
+    printf(COR_VERDE "  cadastrar\n" COR_RESET);
+    printf("      Cadastra um novo produto solicitando campo a campo:\n");
+    printf("      1. Nome/Descrição do produto\n");
+    printf("      2. Quantidade inicial\n");
+    printf("      3. Valor unitário (R$)\n\n");
+
+    printf(COR_VERDE "  cadastrar <item> <quantidade> [valor_unitario]\n" COR_RESET);
     printf(COR_VERDE "  adicionar <item> <quantidade> [valor_unitario]\n" COR_RESET);
-    printf("      Cadastra um novo item ou incrementa o saldo de um existente.\n");
+    printf("      Cadastra um novo item ou incrementa o saldo diretamente na linha.\n");
     printf("      O valor unitário é opcional (padrão: 0.00).\n");
     printf("      Exemplos:\n");
-    printf("        adicionar Parafuso 100\n");
-    printf("        adicionar \"Luva de Seguranca\" 40 12.90\n\n");
+    printf("        cadastrar Parafuso 100\n");
+    printf("        cadastrar \"Luva de Seguranca\" 40 12.90\n\n");
 
     printf(COR_VERMELHO "  remover <item> <quantidade>\n" COR_RESET);
     printf("      Dá baixa no estoque. Bloqueado se saldo insuficiente.\n");
@@ -94,6 +101,97 @@ static int dividir_argumentos(char *linha, char *argv_out[], int max_args) {
     return argc;
 }
 
+/* Realiza o cadastro interativo de produto solicitando campo a campo */
+static void cadastrar_produto_interativo(Almoxarifado *almox) {
+    char nome[MAX_NOME];
+    char buffer[128];
+    int quantidade = 0;
+    double valor = 0.0;
+
+    printf("\n" COR_CIANO "=== CADASTRO DE PRODUTO ===" COR_RESET "\n");
+    printf(COR_CINZA "(Dica: pressione Enter após cada campo ou digite 'cancelar' para voltar)\n\n" COR_RESET);
+
+    /* Campo 1: Nome do Produto */
+    while (1) {
+        printf(COR_BRANCO "Nome do produto: " COR_RESET);
+        fflush(stdout);
+        if (!fgets(nome, sizeof(nome), stdin)) return;
+        nome[strcspn(nome, "\r\n")] = '\0';
+        almox_aparar_espacos(nome);
+
+        if (almox_strcasecmp(nome, "cancelar") == 0 || almox_strcasecmp(nome, "sair") == 0) {
+            printf(COR_AMARELO "[INFO] Cadastro cancelado.\n\n" COR_RESET);
+            return;
+        }
+
+        if (strlen(nome) == 0) {
+            printf(COR_AMARELO "  O nome do produto não pode ficar vazio. Tente novamente.\n" COR_RESET);
+            continue;
+        }
+        break;
+    }
+
+    /* Campo 2: Quantidade */
+    while (1) {
+        printf(COR_BRANCO "Quantidade inicial: " COR_RESET);
+        fflush(stdout);
+        if (!fgets(buffer, sizeof(buffer), stdin)) return;
+        buffer[strcspn(buffer, "\r\n")] = '\0';
+        almox_aparar_espacos(buffer);
+
+        if (almox_strcasecmp(buffer, "cancelar") == 0 || almox_strcasecmp(buffer, "sair") == 0) {
+            printf(COR_AMARELO "[INFO] Cadastro cancelado.\n\n" COR_RESET);
+            return;
+        }
+
+        char *endptr;
+        long val = strtol(buffer, &endptr, 10);
+        if (endptr == buffer || *endptr != '\0' || val <= 0) {
+            printf(COR_AMARELO "  Quantidade inválida! Digite um número inteiro maior que 0 (ex: 50).\n" COR_RESET);
+            continue;
+        }
+        quantidade = (int)val;
+        break;
+    }
+
+    /* Campo 3: Valor unitário */
+    while (1) {
+        printf(COR_BRANCO "Valor unitário em R$ (ex: 19.90 ou Enter para 0.00): " COR_RESET);
+        fflush(stdout);
+        if (!fgets(buffer, sizeof(buffer), stdin)) return;
+        buffer[strcspn(buffer, "\r\n")] = '\0';
+        almox_aparar_espacos(buffer);
+
+        if (almox_strcasecmp(buffer, "cancelar") == 0 || almox_strcasecmp(buffer, "sair") == 0) {
+            printf(COR_AMARELO "[INFO] Cadastro cancelado.\n\n" COR_RESET);
+            return;
+        }
+
+        if (strlen(buffer) == 0) {
+            valor = 0.0;
+            break;
+        }
+
+        /* Aceita vírgula ou ponto como separador decimal */
+        for (int i = 0; buffer[i]; i++) {
+            if (buffer[i] == ',') buffer[i] = '.';
+        }
+
+        char *endptr;
+        double v = strtod(buffer, &endptr);
+        if (endptr == buffer || *endptr != '\0' || v < 0.0) {
+            printf(COR_AMARELO "  Valor inválido! Digite um preço numérico positivo (ex: 15.90 ou 15,90).\n" COR_RESET);
+            continue;
+        }
+        valor = v;
+        break;
+    }
+
+    printf("\n");
+    almox_adicionar(almox, nome, quantidade, valor);
+    printf("\n");
+}
+
 /* Executa um comando a partir de uma lista de argumentos */
 static int processar_comando(Almoxarifado *almox, int argc, char *argv[]) {
     if (argc == 0) return 1;
@@ -101,13 +199,23 @@ static int processar_comando(Almoxarifado *almox, int argc, char *argv[]) {
     char *cmd = argv[0];
 
     /* ------------------------------------------------------------------ */
-    /* ADICIONAR                                                            */
-    /* Sintaxe: adicionar <nome> <quantidade> [valor_unitario]             */
+    /* CADASTRAR / ADICIONAR                                              */
+    /* Sintaxe interativa: cadastrar                                      */
+    /* Sintaxe CLI rápida: cadastrar <nome> <quantidade> [valor_unitario] */
     /* ------------------------------------------------------------------ */
-    if (almox_strcasecmp(cmd, "adicionar") == 0 || almox_strcasecmp(cmd, "add") == 0) {
+    if (almox_strcasecmp(cmd, "cadastrar") == 0 || almox_strcasecmp(cmd, "adicionar") == 0 ||
+        almox_strcasecmp(cmd, "add") == 0 || almox_strcasecmp(cmd, "novo") == 0) {
+
+        /* Se invocado sem argumentos (apenas o comando), faz o fluxo interativo campo a campo */
+        if (argc == 1) {
+            cadastrar_produto_interativo(almox);
+            return 1;
+        }
+
         if (argc < 3) {
-            printf(COR_AMARELO "Uso: adicionar <nome> <quantidade> [valor_unitario]\n" COR_RESET);
-            printf("Exemplo: adicionar \"Luva de Seguranca\" 40 12.90\n");
+            printf(COR_AMARELO "Dica: Digite apenas 'cadastrar' para preencher campo a campo.\n" COR_RESET);
+            printf(COR_AMARELO "Ou em linha única: cadastrar <nome> <quantidade> [valor_unitario]\n" COR_RESET);
+            printf("Exemplo: cadastrar \"Luva de Seguranca\" 40 12.90\n");
             return 1;
         }
 
@@ -121,7 +229,8 @@ static int processar_comando(Almoxarifado *almox, int argc, char *argv[]) {
         int    qtd;
         int    nome_ate; /* índice exclusivo do último token do nome */
 
-        if (argc >= 4 && strchr(argv[argc - 1], '.') != NULL) {
+        if (argc >= 4 && (strchr(argv[argc - 1], '.') != NULL || strchr(argv[argc - 1], ',') != NULL)) {
+            for (char *c = argv[argc - 1]; *c; c++) if (*c == ',') *c = '.';
             valor    = atof(argv[argc - 1]);
             qtd      = atoi(argv[argc - 2]);
             nome_ate = argc - 2;

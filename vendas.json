@@ -31,6 +31,22 @@
       "valorUnitario": 15.50,
       "quantidade": 40,
       "ativo": true
+    },
+    {
+      "codigo": 5,
+      "nome": "Teclado Mecanico RGB",
+      "dataEntrada": "2026-11-05",
+      "valorUnitario": 249.90,
+      "quantidade": 15,
+      "ativo": true
+    },
+    {
+      "codigo": 6,
+      "nome": "Mouse Sem Fio",
+      "dataEntrada": "2026-11-05",
+      "valorUnitario": 49.90,
+      "quantidade": 20,
+      "ativo": true
     }
   ],
   "historico": [
@@ -97,6 +113,22 @@
       "quantidade": 10,
       "saldo_anterior": 120,
       "saldo_novo": 130
+    },
+    {
+      "data_hora": "2026-11-05 22:55:17",
+      "operacao": "ADICIONAR",
+      "nome": "Teclado Mecanico RGB",
+      "quantidade": 15,
+      "saldo_anterior": 0,
+      "saldo_novo": 15
+    },
+    {
+      "data_hora": "2026-11-05 22:55:27",
+      "operacao": "ADICIONAR",
+      "nome": "Mouse Sem Fio",
+      "quantidade": 20,
+      "saldo_anterior": 0,
+      "saldo_novo": 20
     }
   ]
 }
