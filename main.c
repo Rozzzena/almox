@@ -18,8 +18,9 @@ static void exibir_banner(void) {
     printf("  ===============================================================\n");
     printf(COR_RESET);
     printf("  Comandos: " COR_VERDE "cadastrar" COR_RESET ", " COR_AZUL "comprar" COR_RESET
-           ", " COR_VERMELHO "vender" COR_RESET ", " COR_AMARELO "desativar" COR_RESET
-           ", " COR_CIANO "listar" COR_RESET ", " COR_MAGENTA "relatorio" COR_RESET
+           ", " COR_VERMELHO "vender" COR_RESET ", " COR_AMARELO "editar" COR_RESET
+           ", " COR_AMARELO "desativar" COR_RESET ", " COR_CIANO "listar" COR_RESET
+           ", " COR_MAGENTA "relatorio" COR_RESET ", " COR_VERDE "exportar" COR_RESET
            ", " COR_BRANCO "consultar" COR_RESET ", " COR_CINZA "historico" COR_RESET "\n");
     printf("  Digite " COR_BRANCO "'ajuda'" COR_RESET " para instruções ou "
            COR_BRANCO "'sair'" COR_RESET " para encerrar.\n\n");
@@ -29,8 +30,8 @@ static void exibir_ajuda(void) {
     printf("\n" COR_CIANO "------------------------- GUIA DE COMANDOS -------------------------" COR_RESET "\n");
 
     printf(COR_VERDE "  cadastrar\n" COR_RESET);
-    printf("      Cadastra um novo produto solicitando campo a campo (nome, qtd, valor).\n");
-    printf("      (Ou: cadastrar <produto> <quantidade> [valor_unitario])\n\n");
+    printf("      Cadastra um novo produto solicitando campo a campo (nome, qtd, custo, venda, est. mín).\n");
+    printf("      (Ou: cadastrar <produto> <quantidade> [valor_venda])\n\n");
 
     printf(COR_AZUL "  comprar [produto] [quantidade] [valor_unitario]\n" COR_RESET);
     printf("      Registra uma compra / entrada de estoque de produto.\n");
@@ -45,21 +46,29 @@ static void exibir_ajuda(void) {
     printf("        vender                 (modo interativo)\n");
     printf("        vender Parafuso 25\n\n");
 
+    printf(COR_AMARELO "  editar <codigo>\n" COR_RESET);
+    printf("      Edita interativamente os dados de um produto (nome, qtd, custo, venda, estoque mín).\n");
+    printf("      Pressione Enter em qualquer campo para manter o valor atual.\n\n");
+
     printf(COR_AMARELO "  desativar <produto>\n" COR_RESET);
     printf("      Exclusão lógica — desativa o produto sem apagar seu histórico.\n");
     printf("      Use 'comprar' ou 'cadastrar' no mesmo item para reativá-lo.\n\n");
 
     printf(COR_CIANO "  listar [tudo]\n" COR_RESET);
-    printf("      Exibe produtos em estoque, valores totais e status (OK, BAIXO, etc).\n\n");
+    printf("      Exibe produtos em estoque, valores totais e status (OK, BAIXO, ZERADO).\n\n");
 
     printf(COR_MAGENTA "  relatorio\n" COR_RESET);
-    printf("      Calcula valor financeiro em estoque, total de itens e resumo geral.\n\n");
+    printf("      Calcula custo total, valor financeiro de venda, projeção de lucro e alertas.\n\n");
+
+    printf(COR_VERDE "  exportar [arquivo.csv]\n" COR_RESET);
+    printf("      Exporta o estoque completo para planilha CSV compatível com Excel.\n");
+    printf("      Exemplo: exportar estoque.csv\n\n");
 
     printf(COR_BRANCO "  consultar <termo>\n" COR_RESET);
     printf("      Busca produtos ativos pelo nome (busca parcial).\n\n");
 
     printf(COR_CINZA "  historico [limite]\n" COR_RESET);
-    printf("      Exibe o histórico de movimentações (compras, vendas e cadastros).\n\n");
+    printf("      Exibe o histórico de movimentações (compras, vendas, cadastros e edições).\n\n");
 
     printf(COR_BRANCO "  limpar  |  sair\n" COR_RESET);
     printf("      Limpa a tela ou encerra a aplicação.\n");
@@ -94,7 +103,9 @@ static void cadastrar_produto_interativo(Almoxarifado *almox) {
     char nome[MAX_NOME];
     char buffer[128];
     int quantidade = 0;
-    double valor = 0.0;
+    double precoCusto = 0.0;
+    double precoVenda = 0.0;
+    int estoqueMin = 0;
 
     printf("\n" COR_CIANO "=== CADASTRO DE PRODUTO ===" COR_RESET "\n");
     printf(COR_CINZA "(Dica: pressione Enter após cada campo ou digite 'cancelar' para voltar)\n\n" COR_RESET);
@@ -142,9 +153,9 @@ static void cadastrar_produto_interativo(Almoxarifado *almox) {
         break;
     }
 
-    /* Campo 3: Valor unitário */
+    /* Campo 3: Preço de Custo */
     while (1) {
-        printf(COR_BRANCO "Valor unitário em R$ (ex: 19.90 ou Enter para 0.00): " COR_RESET);
+        printf(COR_BRANCO "Preço de CUSTO unitário em R$ (ou Enter para 0.00): " COR_RESET);
         fflush(stdout);
         if (!fgets(buffer, sizeof(buffer), stdin)) return;
         buffer[strcspn(buffer, "\r\n")] = '\0';
@@ -156,11 +167,42 @@ static void cadastrar_produto_interativo(Almoxarifado *almox) {
         }
 
         if (strlen(buffer) == 0) {
-            valor = 0.0;
+            precoCusto = 0.0;
             break;
         }
 
-        /* Aceita vírgula ou ponto como separador decimal */
+        for (int i = 0; buffer[i]; i++) {
+            if (buffer[i] == ',') buffer[i] = '.';
+        }
+
+        char *endptr;
+        double v = strtod(buffer, &endptr);
+        if (endptr == buffer || *endptr != '\0' || v < 0.0) {
+            printf(COR_AMARELO "  Valor inválido! Digite um número positivo.\n" COR_RESET);
+            continue;
+        }
+        precoCusto = v;
+        break;
+    }
+
+    /* Campo 4: Preço de Venda */
+    while (1) {
+        printf(COR_BRANCO "Preço de VENDA unitário em R$ (ou Enter para 0.00): " COR_RESET);
+        fflush(stdout);
+        if (!fgets(buffer, sizeof(buffer), stdin)) return;
+        buffer[strcspn(buffer, "\r\n")] = '\0';
+        almox_aparar_espacos(buffer);
+
+        if (almox_strcasecmp(buffer, "cancelar") == 0 || almox_strcasecmp(buffer, "sair") == 0) {
+            printf(COR_AMARELO "[INFO] Cadastro cancelado.\n\n" COR_RESET);
+            return;
+        }
+
+        if (strlen(buffer) == 0) {
+            precoVenda = 0.0;
+            break;
+        }
+
         for (int i = 0; buffer[i]; i++) {
             if (buffer[i] == ',') buffer[i] = '.';
         }
@@ -171,12 +213,170 @@ static void cadastrar_produto_interativo(Almoxarifado *almox) {
             printf(COR_AMARELO "  Valor inválido! Digite um preço numérico positivo (ex: 15.90 ou 15,90).\n" COR_RESET);
             continue;
         }
-        valor = v;
+        precoVenda = v;
+        break;
+    }
+
+    /* Campo 5: Estoque Mínimo */
+    while (1) {
+        printf(COR_BRANCO "Estoque mínimo de segurança (ou Enter para 5): " COR_RESET);
+        fflush(stdout);
+        if (!fgets(buffer, sizeof(buffer), stdin)) return;
+        buffer[strcspn(buffer, "\r\n")] = '\0';
+        almox_aparar_espacos(buffer);
+
+        if (almox_strcasecmp(buffer, "cancelar") == 0 || almox_strcasecmp(buffer, "sair") == 0) {
+            printf(COR_AMARELO "[INFO] Cadastro cancelado.\n\n" COR_RESET);
+            return;
+        }
+
+        if (strlen(buffer) == 0) {
+            estoqueMin = 5;
+            break;
+        }
+
+        char *endptr;
+        long val = strtol(buffer, &endptr, 10);
+        if (endptr == buffer || *endptr != '\0' || val < 0) {
+            printf(COR_AMARELO "  Estoque mínimo inválido! Digite um inteiro maior ou igual a 0.\n" COR_RESET);
+            continue;
+        }
+        estoqueMin = (int)val;
         break;
     }
 
     printf("\n");
-    almox_adicionar(almox, nome, quantidade, valor);
+    almox_adicionar_completo(almox, nome, quantidade, precoCusto, precoVenda, estoqueMin);
+    printf("\n");
+}
+
+/* Edita um produto existente de forma interativa */
+static void editar_produto_interativo(Almoxarifado *almox, int codigo) {
+    int idx = almox_buscar_indice_codigo(almox, codigo);
+    if (idx < 0) {
+        printf(COR_VERMELHO "Erro: Produto com código %03d não encontrado.\n" COR_RESET, codigo);
+        return;
+    }
+
+    ItemEstoque *it = &almox->itens[idx];
+    printf("\n" COR_CIANO "=== EDITAR PRODUTO [Cód. %03d] ===" COR_RESET "\n", it->codigo);
+    printf(COR_CINZA "(Dica: pressione Enter sem digitar nada para manter o valor atual)\n\n" COR_RESET);
+
+    char buffer[128];
+    char novo_nome[MAX_NOME];
+    snprintf(novo_nome, sizeof(novo_nome), "%s", it->nome);
+    int nova_qtd = it->quantidade;
+    double novo_custo = it->precoCusto;
+    double novo_preco = it->valorUnitario;
+    int novo_est_min = it->estoqueMinimo;
+    int alterar_campos = 0;
+
+    /* 1. Nome */
+    printf(COR_BRANCO "Nome [%s]: " COR_RESET, it->nome);
+    fflush(stdout);
+    if (fgets(buffer, sizeof(buffer), stdin)) {
+        buffer[strcspn(buffer, "\r\n")] = '\0';
+        almox_aparar_espacos(buffer);
+        if (almox_strcasecmp(buffer, "cancelar") == 0) {
+            printf(COR_AMARELO "[INFO] Edição cancelada.\n\n" COR_RESET);
+            return;
+        }
+        if (strlen(buffer) > 0) {
+            strncpy(novo_nome, buffer, sizeof(novo_nome) - 1);
+            novo_nome[sizeof(novo_nome) - 1] = '\0';
+            alterar_campos |= 1;
+        }
+    }
+
+    /* 2. Quantidade */
+    printf(COR_BRANCO "Quantidade em estoque [%d]: " COR_RESET, it->quantidade);
+    fflush(stdout);
+    if (fgets(buffer, sizeof(buffer), stdin)) {
+        buffer[strcspn(buffer, "\r\n")] = '\0';
+        almox_aparar_espacos(buffer);
+        if (almox_strcasecmp(buffer, "cancelar") == 0) {
+            printf(COR_AMARELO "[INFO] Edição cancelada.\n\n" COR_RESET);
+            return;
+        }
+        if (strlen(buffer) > 0) {
+            char *endptr;
+            long val = strtol(buffer, &endptr, 10);
+            if (endptr != buffer && *endptr == '\0' && val >= 0) {
+                nova_qtd = (int)val;
+                alterar_campos |= 2;
+            }
+        }
+    }
+
+    /* 3. Preço de custo */
+    printf(COR_BRANCO "Preço de custo [R$ %.2f]: " COR_RESET, it->precoCusto);
+    fflush(stdout);
+    if (fgets(buffer, sizeof(buffer), stdin)) {
+        buffer[strcspn(buffer, "\r\n")] = '\0';
+        almox_aparar_espacos(buffer);
+        if (almox_strcasecmp(buffer, "cancelar") == 0) {
+            printf(COR_AMARELO "[INFO] Edição cancelada.\n\n" COR_RESET);
+            return;
+        }
+        if (strlen(buffer) > 0) {
+            for (int i = 0; buffer[i]; i++) if (buffer[i] == ',') buffer[i] = '.';
+            char *endptr;
+            double v = strtod(buffer, &endptr);
+            if (endptr != buffer && *endptr == '\0' && v >= 0.0) {
+                novo_custo = v;
+                alterar_campos |= 4;
+            }
+        }
+    }
+
+    /* 4. Preço de venda */
+    printf(COR_BRANCO "Preço de venda [R$ %.2f]: " COR_RESET, it->valorUnitario);
+    fflush(stdout);
+    if (fgets(buffer, sizeof(buffer), stdin)) {
+        buffer[strcspn(buffer, "\r\n")] = '\0';
+        almox_aparar_espacos(buffer);
+        if (almox_strcasecmp(buffer, "cancelar") == 0) {
+            printf(COR_AMARELO "[INFO] Edição cancelada.\n\n" COR_RESET);
+            return;
+        }
+        if (strlen(buffer) > 0) {
+            for (int i = 0; buffer[i]; i++) if (buffer[i] == ',') buffer[i] = '.';
+            char *endptr;
+            double v = strtod(buffer, &endptr);
+            if (endptr != buffer && *endptr == '\0' && v >= 0.0) {
+                novo_preco = v;
+                alterar_campos |= 8;
+            }
+        }
+    }
+
+    /* 5. Estoque mínimo */
+    printf(COR_BRANCO "Estoque mínimo [%d]: " COR_RESET, it->estoqueMinimo);
+    fflush(stdout);
+    if (fgets(buffer, sizeof(buffer), stdin)) {
+        buffer[strcspn(buffer, "\r\n")] = '\0';
+        almox_aparar_espacos(buffer);
+        if (almox_strcasecmp(buffer, "cancelar") == 0) {
+            printf(COR_AMARELO "[INFO] Edição cancelada.\n\n" COR_RESET);
+            return;
+        }
+        if (strlen(buffer) > 0) {
+            char *endptr;
+            long val = strtol(buffer, &endptr, 10);
+            if (endptr != buffer && *endptr == '\0' && val >= 0) {
+                novo_est_min = (int)val;
+                alterar_campos |= 16;
+            }
+        }
+    }
+
+    printf("\n");
+    if (alterar_campos == 0) {
+        printf(COR_AMARELO "[INFO] Nenhuma alteração foi realizada.\n\n" COR_RESET);
+        return;
+    }
+
+    almox_editar_produto(almox, codigo, novo_nome, nova_qtd, novo_custo, novo_preco, novo_est_min, alterar_campos);
     printf("\n");
 }
 
@@ -472,6 +672,34 @@ static int processar_comando(Almoxarifado *almox, int argc, char *argv[]) {
         }
 
         almox_remover(almox, nome_completo, qtd);
+        return 1;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* EDITAR — Atualização interativa de produto pelo código               */
+    /* ------------------------------------------------------------------ */
+    if (almox_strcasecmp(cmd, "editar") == 0 || almox_strcasecmp(cmd, "edit") == 0 ||
+        almox_strcasecmp(cmd, "atualizar") == 0) {
+        if (argc < 2) {
+            printf(COR_AMARELO "Uso: editar <codigo>\n" COR_RESET);
+            printf("Exemplo: editar 1\n");
+            return 1;
+        }
+        int codigo = atoi(argv[1]);
+        if (codigo <= 0) {
+            printf(COR_VERMELHO "Erro: Código inválido '%s'. Digite um número positivo.\n" COR_RESET, argv[1]);
+            return 1;
+        }
+        editar_produto_interativo(almox, codigo);
+        return 1;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* EXPORTAR — Gera arquivo CSV compatível com Excel                    */
+    /* ------------------------------------------------------------------ */
+    if (almox_strcasecmp(cmd, "exportar") == 0 || almox_strcasecmp(cmd, "csv") == 0) {
+        const char *arquivo = (argc >= 2) ? argv[1] : "estoque.csv";
+        almox_exportar_csv(almox, arquivo);
         return 1;
     }
 

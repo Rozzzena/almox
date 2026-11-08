@@ -7,7 +7,9 @@ cls
 if exist "%~dp0vendas.exe" (
     "%~dp0vendas.exe"
 ) else (
-    "%~dp0almox.exe"
+    echo [ERRO] vendas.exe nao encontrado. Execute build.bat para compilar.
+    pause
+    exit /b 1
 )
 
 echo.

@@ -5,7 +5,11 @@ mode con: cols=95 lines=35
 cls
 
 set "EXE_CMD=%~dp0vendas.exe"
-if not exist "%EXE_CMD%" set "EXE_CMD=%~dp0almox.exe"
+if not exist "%EXE_CMD%" (
+    echo [ERRO] vendas.exe nao encontrado. Execute build.bat para compilar.
+    pause
+    exit /b 1
+)
 
 echo ===============================================================
 echo   DEMONSTRAÇÃO AO VIVO: SISTEMA DE VENDAS E ESTOQUE (C + JSON)

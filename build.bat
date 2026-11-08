@@ -13,9 +13,9 @@ if %ERRORLEVEL% neq 0 (
 )
 
 gcc -std=c99 -Wall -Wextra -O2 main.c almoxarifado.c -o vendas.exe
-copy /y vendas.exe almox.exe >nul 2>&1
 
 if %ERRORLEVEL% equ 0 (
+    if exist almox.exe del /f /q almox.exe >nul 2>&1
     echo.
     echo [SUCESSO] Compilacao concluida com sucesso!
     echo Executavel gerado: vendas.exe

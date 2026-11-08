@@ -8,18 +8,20 @@ Aplicação desenvolvida em **Linguagem C (C99)** para gestão de compras, venda
 
 | Comando | Sintaxe | Descrição |
 | :--- | :--- | :--- |
-| `cadastrar` | `cadastrar` | Cadastra novo produto campo a campo (interativo) |
+| `cadastrar` | `cadastrar` | Cadastra novo produto campo a campo (nome, qtd, custo, venda, est. mín) |
 | `cadastrar` | `cadastrar <produto> <qtd> [valor]` | Cadastra produto em linha única |
 | `comprar` | `comprar` | Registra entrada/compra de estoque (interativo) |
 | `comprar` | `comprar <produto> <qtd> [valor]` | Entrada de estoque em linha única |
 | `vender` | `vender` | Realiza uma venda (interativo) |
 | `vender` | `vender <produto> <qtd>` | Venda em linha única com trava de saldo |
+| `editar` | `editar <codigo>` | Atualização guiada de produto existente (campos opcionais) |
 | `desativar` | `desativar <produto>` | Exclusão lógica — remove das listagens sem apagar |
-| `listar` | `listar` | Exibe apenas produtos ativos com saldos e valores |
+| `listar` | `listar` | Exibe apenas produtos ativos com saldos, custo e valores |
 | `listar tudo` | `listar tudo` | Exibe todos os produtos, inclusive desativados |
+| `exportar` | `exportar [arquivo.csv]` | Exporta dados completos para planilha CSV (padrão: `estoque.csv`) |
 | `consultar` | `consultar <termo>` | Busca parcial no nome do produto |
-| `relatorio` | `relatorio` | Balanço financeiro e resumo quantitativo |
-| `historico` | `historico [limite]` | Histórico de compras, vendas e cadastros |
+| `relatorio` | `relatorio` | Balanço com custo total, valor de venda e lucro projetado |
+| `historico` | `historico [limite]` | Histórico de compras, vendas, cadastros e edições |
 
 ---
 
@@ -48,7 +50,7 @@ build.bat
 
 ### Opção 2: Usando o GCC diretamente
 ```bash
-gcc -std=c99 -Wall -Wextra -O2 main.c almoxarifado.c -o almox.exe
+gcc -std=c99 -Wall -Wextra -O2 main.c almoxarifado.c -o vendas.exe
 ```
 
 ### Opção 3: Usando Make

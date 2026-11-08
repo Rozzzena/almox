@@ -19,8 +19,10 @@ typedef struct {
     int    codigo;           /* Código identificador único do produto */
     char   nome[MAX_NOME];
     char   dataEntrada[25];  /* Formato ISO: "AAAA-MM-DD"             */
-    double valorUnitario;    /* Preço unitário                        */
+    double precoCusto;       /* Preço de custo unitário               */
+    double valorUnitario;    /* Preço de venda unitário               */
     int    quantidade;       /* Quantidade em estoque                 */
+    int    estoqueMinimo;    /* Quantidade mínima de segurança        */
     int    ativo;            /* 1 = ativo, 0 = inativo                */
 } ItemEstoque;
 
@@ -53,6 +55,11 @@ int  almox_salvar_json    (const Almoxarifado *almox);
 
 /* ---- CRUD / Compras e Vendas ------------------------------------------- */
 int  almox_adicionar      (Almoxarifado *almox, const char *nome, int quantidade, double valorUnitario);
+int  almox_adicionar_completo(Almoxarifado *almox, const char *nome, int quantidade,
+                              double precoCusto, double valorUnitario, int estoqueMinimo);
+int  almox_editar_produto (Almoxarifado *almox, int codigo, const char *novo_nome,
+                           int nova_qtd, double novo_custo, double novo_preco,
+                           int novo_estoque_min, int alterar_campos);
 int  almox_remover        (Almoxarifado *almox, const char *nome, int quantidade);
 int  almox_desativar      (Almoxarifado *almox, const char *nome); /* Exclusão lógica */
 
@@ -64,15 +71,17 @@ int  almox_desativar      (Almoxarifado *almox, const char *nome); /* Exclusão 
 #define vendas_relatorio almox_relatorio
 #define vendas_consultar almox_consultar
 
-/* ---- Leitura / Relatórios --------------------------------------------- */
+/* ---- Leitura / Relatórios / Exportação -------------------------------- */
 void almox_listar         (const Almoxarifado *almox, int mostrar_inativos);
 void almox_consultar      (const Almoxarifado *almox, const char *termo);
 void almox_exibir_historico(const Almoxarifado *almox, int limite);
 void almox_relatorio      (const Almoxarifado *almox); /* Equivale ao $aggregate do Mongo */
+int  almox_exportar_csv   (const Almoxarifado *almox, const char *caminho_csv);
 
 /* ---- Utilitários ------------------------------------------------------- */
 int  almox_strcasecmp           (const char *s1, const char *s2);
 int  almox_buscar_indice        (const Almoxarifado *almox, const char *nome);
+int  almox_buscar_indice_codigo (const Almoxarifado *almox, int codigo);
 void almox_obter_data_hora_atual(char *buffer, size_t tamanho);
 void almox_obter_data_atual     (char *buffer, size_t tamanho);
 void almox_aparar_espacos       (char *str);

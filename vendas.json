@@ -2,50 +2,82 @@
   "itens": [
     {
       "codigo": 1,
-      "nome": "Parafuso",
+      "nome": "Parafuso Sextavado",
       "dataEntrada": "",
-      "valorUnitario": 0.85,
-      "quantidade": 170,
+      "precoCusto": 0.40,
+      "valorUnitario": 1.20,
+      "quantidade": 180,
+      "estoqueMinimo": 25,
       "ativo": true
     },
     {
       "codigo": 2,
       "nome": "Cabo de Rede Cat6",
       "dataEntrada": "",
+      "precoCusto": 0.00,
       "valorUnitario": 0.00,
       "quantidade": 50,
+      "estoqueMinimo": 0,
       "ativo": true
     },
     {
       "codigo": 3,
       "nome": "Porca",
       "dataEntrada": "",
+      "precoCusto": 0.00,
       "valorUnitario": 0.00,
       "quantidade": 200,
+      "estoqueMinimo": 0,
       "ativo": true
     },
     {
       "codigo": 4,
       "nome": "Luva Nitrilica",
       "dataEntrada": "2026-10-20",
+      "precoCusto": 0.00,
       "valorUnitario": 15.50,
       "quantidade": 40,
+      "estoqueMinimo": 0,
       "ativo": true
     },
     {
       "codigo": 5,
       "nome": "Teclado Mecanico RGB",
       "dataEntrada": "2026-11-05",
+      "precoCusto": 0.00,
       "valorUnitario": 249.90,
       "quantidade": 13,
+      "estoqueMinimo": 0,
       "ativo": true
     },
     {
       "codigo": 6,
       "nome": "Mouse Sem Fio",
       "dataEntrada": "2026-11-05",
+      "precoCusto": 0.00,
       "valorUnitario": 49.90,
       "quantidade": 20,
+      "estoqueMinimo": 0,
+      "ativo": true
+    },
+    {
+      "codigo": 7,
+      "nome": "cadastrar martelo",
+      "dataEntrada": "2026-11-05",
+      "precoCusto": 0.00,
+      "valorUnitario": 16.90,
+      "quantidade": 50,
+      "estoqueMinimo": 0,
+      "ativo": true
+    },
+    {
+      "codigo": 8,
+      "nome": "Canto de Parede",
+      "dataEntrada": "2026-11-08",
+      "precoCusto": 1.00,
+      "valorUnitario": 2.50,
+      "quantidade": 3,
+      "estoqueMinimo": 10,
       "ativo": true
     }
   ],
@@ -153,6 +185,30 @@
       "quantidade": 2,
       "saldo_anterior": 15,
       "saldo_novo": 13
+    },
+    {
+      "data_hora": "2026-11-05 23:27:02",
+      "operacao": "CADASTRO",
+      "nome": "cadastrar martelo",
+      "quantidade": 50,
+      "saldo_anterior": 0,
+      "saldo_novo": 50
+    },
+    {
+      "data_hora": "2026-11-08 01:19:58",
+      "operacao": "EDICAO",
+      "nome": "Parafuso Sextavado",
+      "quantidade": 180,
+      "saldo_anterior": 170,
+      "saldo_novo": 180
+    },
+    {
+      "data_hora": "2026-11-08 01:20:39",
+      "operacao": "CADASTRO",
+      "nome": "Canto de Parede",
+      "quantidade": 3,
+      "saldo_anterior": 0,
+      "saldo_novo": 3
     }
   ]
 }

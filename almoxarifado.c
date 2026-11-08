@@ -100,6 +100,14 @@ int almox_buscar_indice(const Almoxarifado *almox, const char *nome) {
     return -1;
 }
 
+int almox_buscar_indice_codigo(const Almoxarifado *almox, int codigo) {
+    if (!almox || codigo <= 0) return -1;
+    for (int i = 0; i < almox->total_itens; i++) {
+        if (almox->itens[i].codigo == codigo) return i;
+    }
+    return -1;
+}
+
 /* ======================================================================
  * Helpers de parsing JSON (sem dependências externas)
  * ====================================================================== */
@@ -223,22 +231,28 @@ int almox_carregar_json(Almoxarifado *almox) {
                 char   data[25]        = "";
                 int    qtd             = 0;
                 int    codigo          = 0;
+                double precoCusto      = 0.0;
                 double valorUnit       = 0.0;
+                int    estoqueMin      = 0;
                 int    ativo           = 1; /* default: ativo */
 
-                extrair_string_json(bloco, "nome",         nome,     sizeof(nome));
-                extrair_string_json(bloco, "dataEntrada",  data,     sizeof(data));
-                extrair_int_json   (bloco, "quantidade",  &qtd);
-                extrair_int_json   (bloco, "codigo",      &codigo);
+                extrair_string_json(bloco, "nome",          nome,        sizeof(nome));
+                extrair_string_json(bloco, "dataEntrada",   data,        sizeof(data));
+                extrair_int_json   (bloco, "quantidade",   &qtd);
+                extrair_int_json   (bloco, "codigo",       &codigo);
+                extrair_float_json (bloco, "precoCusto",   &precoCusto);
                 extrair_float_json (bloco, "valorUnitario",&valorUnit);
-                extrair_bool_json  (bloco, "ativo",       &ativo);
+                extrair_int_json   (bloco, "estoqueMinimo", &estoqueMin);
+                extrair_bool_json  (bloco, "ativo",        &ativo);
 
                 if (strlen(nome) > 0 && almox->total_itens < MAX_ITENS) {
                     ItemEstoque *it = &almox->itens[almox->total_itens++];
                     snprintf(it->nome, sizeof(it->nome), "%s", nome);
                     snprintf(it->dataEntrada, sizeof(it->dataEntrada), "%s", data);
                     it->quantidade    = qtd;
+                    it->precoCusto    = precoCusto;
                     it->valorUnitario = valorUnit;
+                    it->estoqueMinimo = estoqueMin;
                     it->ativo         = ativo;
 
                     /* Atribui código: usa o gravado ou gera um novo */
@@ -314,8 +328,10 @@ int almox_salvar_json(const Almoxarifado *almox) {
         fprintf(f, "      \"codigo\": %d,\n",           it->codigo);
         fprintf(f, "      \"nome\": \"%s\",\n",         it->nome);
         fprintf(f, "      \"dataEntrada\": \"%s\",\n",  it->dataEntrada);
+        fprintf(f, "      \"precoCusto\": %.2f,\n",     it->precoCusto);
         fprintf(f, "      \"valorUnitario\": %.2f,\n",  it->valorUnitario);
         fprintf(f, "      \"quantidade\": %d,\n",       it->quantidade);
+        fprintf(f, "      \"estoqueMinimo\": %d,\n",    it->estoqueMinimo);
         fprintf(f, "      \"ativo\": %s\n",             it->ativo ? "true" : "false");
         fprintf(f, "    }%s\n", (i == almox->total_itens - 1) ? "" : ",");
     }
@@ -369,8 +385,9 @@ static void registrar_movimentacao(Almoxarifado *almox, const char *op,
  * Se o item existia mas estava inativo, ele é reativado automaticamente.
  * ====================================================================== */
 
-int almox_adicionar(Almoxarifado *almox, const char *nome_bruto,
-                    int quantidade, double valorUnitario) {
+int almox_adicionar_completo(Almoxarifado *almox, const char *nome_bruto,
+                              int quantidade, double precoCusto, double valorUnitario,
+                              int estoqueMinimo) {
     char nome[MAX_NOME];
     strncpy(nome, nome_bruto, sizeof(nome) - 1);
     nome[sizeof(nome) - 1] = '\0';
@@ -384,8 +401,12 @@ int almox_adicionar(Almoxarifado *almox, const char *nome_bruto,
         printf(COR_VERMELHO "Erro: Quantidade deve ser maior que zero (recebido: %d).\n" COR_RESET, quantidade);
         return 0;
     }
-    if (valorUnitario < 0.0) {
-        printf(COR_VERMELHO "Erro: Valor unitário não pode ser negativo.\n" COR_RESET);
+    if (valorUnitario < 0.0 || precoCusto < 0.0) {
+        printf(COR_VERMELHO "Erro: Preço de custo e valor unitário não podem ser negativos.\n" COR_RESET);
+        return 0;
+    }
+    if (estoqueMinimo < 0) {
+        printf(COR_VERMELHO "Erro: Estoque mínimo não pode ser negativo.\n" COR_RESET);
         return 0;
     }
 
@@ -404,17 +425,28 @@ int almox_adicionar(Almoxarifado *almox, const char *nome_bruto,
             printf(COR_AMARELO "[INFO] Item reativado: '%s'\n" COR_RESET, almox->itens[idx].nome);
         }
 
-        /* Atualiza valor unitário se um novo foi informado */
+        /* Atualiza valores se novos foram informados */
         if (valorUnitario > 0.0)
             almox->itens[idx].valorUnitario = valorUnitario;
+        if (precoCusto > 0.0)
+            almox->itens[idx].precoCusto = precoCusto;
+        if (estoqueMinimo > 0)
+            almox->itens[idx].estoqueMinimo = estoqueMinimo;
 
         printf(COR_VERDE "[SUCESSO] Compra registrada: '%s' (Cód. %03d)\n" COR_RESET,
                almox->itens[idx].nome, almox->itens[idx].codigo);
         printf("          Quantidade comprada: " COR_VERDE "+%d unidade(s)" COR_RESET "\n", quantidade);
         printf("          Saldo anterior     : %d  >>  " COR_CIANO "Novo saldo: %d" COR_RESET "\n",
                saldo_ant, saldo_novo);
-        printf("          Preço unitário     : " COR_CIANO "R$ %.2f" COR_RESET "\n",
+        if (almox->itens[idx].precoCusto > 0.0) {
+            printf("          Preço de custo     : " COR_CINZA "R$ %.2f" COR_RESET "\n",
+                   almox->itens[idx].precoCusto);
+        }
+        printf("          Preço de venda     : " COR_CIANO "R$ %.2f" COR_RESET "\n",
                almox->itens[idx].valorUnitario);
+        if (almox->itens[idx].estoqueMinimo > 0) {
+            printf("          Estoque mínimo     : %d unidade(s)\n", almox->itens[idx].estoqueMinimo);
+        }
         registrar_movimentacao(almox, "COMPRA", almox->itens[idx].nome,
                                quantidade, saldo_ant, saldo_novo);
     } else {
@@ -428,8 +460,10 @@ int almox_adicionar(Almoxarifado *almox, const char *nome_bruto,
         it->codigo        = almox->proximo_codigo++;
         snprintf(it->nome, sizeof(it->nome), "%s", nome);
         almox_obter_data_atual(it->dataEntrada, sizeof(it->dataEntrada));
+        it->precoCusto    = precoCusto;
         it->valorUnitario = valorUnitario;
         it->quantidade    = quantidade;
+        it->estoqueMinimo = estoqueMinimo;
         it->ativo         = 1;
         saldo_ant         = 0;
         saldo_novo        = quantidade;
@@ -437,12 +471,77 @@ int almox_adicionar(Almoxarifado *almox, const char *nome_bruto,
         printf(COR_VERDE "[SUCESSO] Novo produto cadastrado: '%s' (Cód. %03d)\n" COR_RESET,
                it->nome, it->codigo);
         printf("          Quantidade inicial : " COR_CIANO "%d unidade(s)" COR_RESET "\n", saldo_novo);
-        printf("          Preço unitário     : " COR_CIANO "R$ %.2f" COR_RESET "\n", it->valorUnitario);
+        if (it->precoCusto > 0.0) {
+            printf("          Preço de custo     : " COR_CINZA "R$ %.2f" COR_RESET "\n", it->precoCusto);
+        }
+        printf("          Preço de venda     : " COR_CIANO "R$ %.2f" COR_RESET "\n", it->valorUnitario);
+        if (it->estoqueMinimo > 0) {
+            printf("          Estoque mínimo     : %d unidade(s)\n", it->estoqueMinimo);
+        }
         printf("          Data de entrada    : " COR_CIANO "%s" COR_RESET "\n", it->dataEntrada);
         registrar_movimentacao(almox, "CADASTRO", almox->itens[idx].nome,
                                quantidade, saldo_ant, saldo_novo);
     }
 
+    almox_salvar_json(almox);
+    return 1;
+}
+
+int almox_adicionar(Almoxarifado *almox, const char *nome_bruto,
+                    int quantidade, double valorUnitario) {
+    return almox_adicionar_completo(almox, nome_bruto, quantidade, 0.0, valorUnitario, 0);
+}
+
+/* ======================================================================
+ * EDITAR — Atualiza dados cadastrais de um produto pelo código
+ * ====================================================================== */
+int almox_editar_produto(Almoxarifado *almox, int codigo, const char *novo_nome,
+                         int nova_qtd, double novo_custo, double novo_preco,
+                         int novo_estoque_min, int alterar_campos) {
+    int idx = almox_buscar_indice_codigo(almox, codigo);
+    if (idx < 0) {
+        printf(COR_VERMELHO "Erro: Produto com código %03d não encontrado.\n" COR_RESET, codigo);
+        return 0;
+    }
+
+    ItemEstoque *it = &almox->itens[idx];
+    int saldo_ant = it->quantidade;
+
+    if ((alterar_campos & 1) && novo_nome && strlen(novo_nome) > 0) {
+        char limpo[MAX_NOME];
+        strncpy(limpo, novo_nome, sizeof(limpo) - 1);
+        limpo[sizeof(limpo) - 1] = '\0';
+        almox_aparar_espacos(limpo);
+        if (strlen(limpo) > 0) {
+            snprintf(it->nome, sizeof(it->nome), "%s", limpo);
+        }
+    }
+
+    if ((alterar_campos & 2) && nova_qtd >= 0) {
+        it->quantidade = nova_qtd;
+    }
+
+    if ((alterar_campos & 4) && novo_custo >= 0.0) {
+        it->precoCusto = novo_custo;
+    }
+
+    if ((alterar_campos & 8) && novo_preco >= 0.0) {
+        it->valorUnitario = novo_preco;
+    }
+
+    if ((alterar_campos & 16) && novo_estoque_min >= 0) {
+        it->estoqueMinimo = novo_estoque_min;
+    }
+
+    printf(COR_VERDE "[SUCESSO] Produto Cód. %03d atualizado com sucesso!\n" COR_RESET, it->codigo);
+    printf("          Nome           : " COR_BRANCO "%s" COR_RESET "\n", it->nome);
+    printf("          Quantidade     : " COR_CIANO "%d un." COR_RESET "\n", it->quantidade);
+    printf("          Preço de custo : R$ %.2f\n", it->precoCusto);
+    printf("          Preço de venda : " COR_CIANO "R$ %.2f" COR_RESET "\n", it->valorUnitario);
+    printf("          Estoque mínimo : %d un.\n", it->estoqueMinimo);
+    printf("          Status         : %s\n", it->ativo ? "Ativo" : "Inativo");
+
+    registrar_movimentacao(almox, "EDICAO", it->nome, it->quantidade, saldo_ant, it->quantidade);
     almox_salvar_json(almox);
     return 1;
 }
@@ -569,13 +668,14 @@ void almox_listar(const Almoxarifado *almox, int mostrar_inativos) {
     }
 
     printf(COR_BRANCO
-           "%-4s | %-5s | %-28s | %-8s | %-11s | %-10s | %-8s\n"
+           "%-4s | %-5s | %-24s | %-6s | %-6s | %-10s | %-10s | %-10s | %-8s\n"
            COR_RESET,
-           "N.", "Cód.", "DESCRIÇÃO", "QTD", "VL.UNIT(R$)", "TOTAL(R$)", "STATUS");
-    printf("---------------------------------------------------------------------------------------\n");
+           "N.", "Cód.", "DESCRIÇÃO", "QTD", "MIN", "CUSTO(R$)", "VENDA(R$)", "TOTAL(R$)", "STATUS");
+    printf("-------------------------------------------------------------------------------------------------------\n");
 
     int    n               = 0;
     int    total_unidades  = 0;
+    double custo_total_est = 0.0;
     double valor_total_est = 0.0;
 
     for (int i = 0; i < almox->total_itens; i++) {
@@ -586,31 +686,35 @@ void almox_listar(const Almoxarifado *almox, int mostrar_inativos) {
         double subtotal = it->valorUnitario * it->quantidade;
         if (it->ativo) {
             total_unidades  += it->quantidade;
+            custo_total_est += it->precoCusto * it->quantidade;
             valor_total_est += subtotal;
         }
 
         const char *status_str;
         const char *cor_status;
+        int limite_baixo = (it->estoqueMinimo > 0) ? it->estoqueMinimo : 5;
+
         if (!it->ativo) {
             status_str = "INATIVO"; cor_status = COR_CINZA;
         } else if (it->quantidade == 0) {
             status_str = "ZERADO";  cor_status = COR_VERMELHO;
-        } else if (it->quantidade <= 5) {
+        } else if (it->quantidade <= limite_baixo) {
             status_str = "BAIXO";   cor_status = COR_AMARELO;
         } else {
             status_str = "OK";      cor_status = COR_VERDE;
         }
 
-        printf("%-4d | %-5d | %-28s | %8d | %11.2f | %10.2f | %s%-8s" COR_RESET "\n",
-               n, it->codigo, it->nome, it->quantidade,
-               it->valorUnitario, subtotal, cor_status, status_str);
+        printf("%-4d | %-5d | %-24.24s | %6d | %6d | %10.2f | %10.2f | %10.2f | %s%-8s" COR_RESET "\n",
+               n, it->codigo, it->nome, it->quantidade, it->estoqueMinimo,
+               it->precoCusto, it->valorUnitario, subtotal, cor_status, status_str);
     }
 
-    printf("---------------------------------------------------------------------------------------\n");
-    printf("Itens exibidos: " COR_CIANO "%d" COR_RESET
-           "  |  Unidades totais (ativos): " COR_CIANO "%d" COR_RESET
-           "  |  Valor em estoque: " COR_CIANO "R$ %.2f" COR_RESET "\n\n",
-           n, total_unidades, valor_total_est);
+    printf("-------------------------------------------------------------------------------------------------------\n");
+    printf("Itens: " COR_CIANO "%d" COR_RESET
+           "  |  Unidades: " COR_CIANO "%d" COR_RESET
+           "  |  Custo Total: " COR_CINZA "R$ %.2f" COR_RESET
+           "  |  Valor Venda Estoque: " COR_VERDE "R$ %.2f" COR_RESET "\n\n",
+           n, total_unidades, custo_total_est, valor_total_est);
 }
 
 /* ======================================================================
@@ -727,6 +831,7 @@ void almox_relatorio(const Almoxarifado *almox) {
     printf("              RELATÓRIO — VALOR TOTAL EM ESTOQUE / VENDAS               \n");
     printf("========================================================================" COR_RESET "\n");
 
+    double custo_total    = 0.0;
     double valor_total    = 0.0;
     int    total_itens    = 0;
     int    total_unidades = 0;
@@ -738,20 +843,78 @@ void almox_relatorio(const Almoxarifado *almox) {
         const ItemEstoque *it = &almox->itens[i];
         if (!it->ativo) { itens_inativos++; continue; }
 
+        custo_total    += it->precoCusto * it->quantidade;
         valor_total    += it->valorUnitario * it->quantidade;
         total_itens++;
         total_unidades += it->quantidade;
+
+        int limite_baixo = (it->estoqueMinimo > 0) ? it->estoqueMinimo : 5;
         if      (it->quantidade == 0) itens_zerados++;
-        else if (it->quantidade <= 5) itens_baixo++;
+        else if (it->quantidade <= limite_baixo) itens_baixo++;
     }
+
+    double lucro_projetado = valor_total - custo_total;
 
     printf("  " COR_BRANCO "Itens ativos             :" COR_RESET " " COR_CIANO  "%d"      COR_RESET "\n", total_itens);
     printf("  " COR_BRANCO "Total de unidades         :" COR_RESET " " COR_CIANO  "%d"      COR_RESET "\n", total_unidades);
     printf("  " COR_BRANCO "Itens inativos            :" COR_RESET " " COR_CINZA  "%d"      COR_RESET "\n", itens_inativos);
     printf("  " COR_BRANCO "Itens com estoque zerado  :" COR_RESET " " COR_VERMELHO "%d"    COR_RESET "\n", itens_zerados);
-    printf("  " COR_BRANCO "Itens com estoque baixo   :" COR_RESET " " COR_AMARELO "%d (<=5 un.)" COR_RESET "\n", itens_baixo);
+    printf("  " COR_BRANCO "Itens abaixo do estoque mín:" COR_RESET " " COR_AMARELO "%d" COR_RESET "\n", itens_baixo);
     printf("  -----------------------------------------------------------------\n");
-    printf("  " COR_BRANCO "VALOR TOTAL EM ESTOQUE    :" COR_RESET " " COR_VERDE  "R$ %.2f" COR_RESET "\n", valor_total);
+    printf("  " COR_BRANCO "CUSTO TOTAL DO ESTOQUE   :" COR_RESET " " COR_CINZA  "R$ %.2f" COR_RESET "\n", custo_total);
+    printf("  " COR_BRANCO "VALOR TOTAL DE VENDA     :" COR_RESET " " COR_VERDE  "R$ %.2f" COR_RESET "\n", valor_total);
+    printf("  " COR_BRANCO "LUCRO BRUTO PROJETADO    :" COR_RESET " " COR_CIANO  "R$ %.2f" COR_RESET "\n", lucro_projetado);
     printf("========================================================================\n\n");
+}
+
+/* ======================================================================
+ * EXPORTAR CSV — Gera arquivo separado por vírgula compatível com Excel
+ * ====================================================================== */
+int almox_exportar_csv(const Almoxarifado *almox, const char *caminho_csv) {
+    const char *arquivo = (caminho_csv && strlen(caminho_csv) > 0) ? caminho_csv : "estoque.csv";
+
+    FILE *f = fopen(arquivo, "w;encoding=utf-8");
+    if (!f) f = fopen(arquivo, "w");
+    if (!f) {
+        printf(COR_VERMELHO "Erro: Não foi possível criar o arquivo CSV '%s'.\n" COR_RESET, arquivo);
+        return 0;
+    }
+
+    /* BOM UTF-8 para o Microsoft Excel abrir com acentuação correta */
+    fputs("\xEF\xBB\xBF", f);
+
+    /* Cabeçalho */
+    fprintf(f, "Codigo;Nome;DataEntrada;Quantidade;EstoqueMinimo;PrecoCusto;ValorVenda;SubtotalCusto;SubtotalVenda;Status\n");
+
+    for (int i = 0; i < almox->total_itens; i++) {
+        const ItemEstoque *it = &almox->itens[i];
+        double subtotal_custo = it->precoCusto * it->quantidade;
+        double subtotal_venda = it->valorUnitario * it->quantidade;
+        int limite_baixo = (it->estoqueMinimo > 0) ? it->estoqueMinimo : 5;
+
+        const char *status_str;
+        if (!it->ativo) status_str = "INATIVO";
+        else if (it->quantidade == 0) status_str = "ZERADO";
+        else if (it->quantidade <= limite_baixo) status_str = "BAIXO";
+        else status_str = "OK";
+
+        /* Escapar aspas caso o nome tenha ponto e vírgula ou aspas */
+        fprintf(f, "%d;\"%s\";%s;%d;%d;%.2f;%.2f;%.2f;%.2f;%s\n",
+                it->codigo,
+                it->nome,
+                it->dataEntrada,
+                it->quantidade,
+                it->estoqueMinimo,
+                it->precoCusto,
+                it->valorUnitario,
+                subtotal_custo,
+                subtotal_venda,
+                status_str);
+    }
+
+    fclose(f);
+    printf(COR_VERDE "[SUCESSO] Estoque exportado para '%s' com sucesso! (%d itens)\n" COR_RESET,
+           arquivo, almox->total_itens);
+    return 1;
 }
 
